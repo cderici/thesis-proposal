@@ -1,0 +1,11 @@
+\subsection{Efficient self-hosting on a meta-tracing JIT is difficult}
+
+While a meta-tracing JIT is able to make an interpreter for a language
+substantially faster in general, it is however, quite difficult to
+achieve a good performance when meta-tracing an interpreter evaluating
+a large dispatch loop, such as another interpreter. Consequently, a
+meta-tracing JIT compiler for a self-hosting programming language
+implementation suffers a significant performance loss, since many
+fundamental parts of a functional programming language implementation
+often involves such big dispatch loops (e.g. reader, expander,
+interpreter).
