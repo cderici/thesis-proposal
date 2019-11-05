@@ -10,45 +10,34 @@ My thesis statement is:
 I will support this thesis statement with the following:
 
 \begin{itemize}
-  \item \textit{A full implementation of Racket on RPython.} Racket
-    recently decided to adopt Chez Scheme as its runtime. To to that
-    end, Racket developers made two important implementation decisions
-    that (among other things) made Racket a more flexible language to
-    re-target: \textit{\textbf{i)}} separated the expansion and the
-    compilation that were fused together in the original C
-    implementation \textit{\textbf{ii)}} export some functionality
-    that's essential for self-hosting (e.g. reader, expander etc.) for
-    the runtime to utilize (e.g. to read and expand Racket
-    modules). This relieves any targeted runtime from implementing
-    those quite large functionalities in terms of both the code size
-    and semantics, thereby allowing an easier hosting of the
-    language. This approach is used to adopt Chez Scheme and it also
-    works for Pycket to fully host the Racket as well. [MOVE THIS TO INTRO]
-
-    I will demonstrate that Pycket has all the necessary runtime
-    support (e.g. primitives, data structures, error handling etc.)
-    that Racket code assumes and is able to load and evaluate any
-    Racket code, thereby being able to also run and pass Racket's own
-    test suite, consisting of more than 800.000 test cases (modulo the
-    ones that are acceptable corner cases such as error-message
+  \item \textit{A full implementation of self-hosting Racket on
+    RPython.} I will demonstrate that Pycket has all the necessary
+    runtime support (e.g. primitives, data structures, error handling
+    etc.)  that Racket code assumes and is able to load and evaluate
+    any Racket code, thereby being able to also run and pass Racket's
+    own test suite, consisting of more than 800.000 test cases (modulo
+    the ones that are acceptable corner cases such as error-message
     differences etc.).
-  \item \textit{An efficient implementation of Racket on RPython.} I
-    will demonstrate the solutions for the numerous performance issues
-    that need to be solved to fully host Racket, such as allocation
-    slow-downs caused by deep continuation chains on the CEK that
-    non-tail calls build up, and the big dispatch loop problem that we
-    discused above. Preliminary analyses indicate, however, there
-    might be a more general problem that subsumes the aformentioned
-    issues, which is that the amount of information that's been
-    communicated between the interpreter and the runtime seems to be
-    not enough, for example for the JIT to maneuver around such a
-    dispatch loop exercising a large number of branches. [MOVE THIS TO INTRO]
+  \item \textit{An efficient implementation of self-hosting Racket on
+    RPython.} I will demonstrate and discuss some attemps to solve the
+    numerous performance issues that comes with self-hosting a
+    language such as Racket on a meta-tracing JIT compiler, such as
+    allocation slow-downs caused by deep continuation chains on the
+    interpreter, and the problem with big dispatch loops as discused
+    above.
+
+    %% Preliminary analyses indicate, however, there might be a
+    %% more general problem that subsumes the aformentioned issues, which
+    %% is that the amount of information that's been communicated between
+    %% the interpreter and the run-time might not be not enough, for
+    %% example for the JIT to maneuver around such a dispatch loop
+    %% exercising a large number of branches.
 
     I will vet the runtime efficiency by running Pycket on various
     different benchmark suites against both Racket's C runtime (which
     actually is a generic JIT compiler) and RacketCS to demonstrate
     that the Pycket, while fully hosting Racket, has a competitive
-    performance [WILL IT, THOUGH?].
+    performance [DOES IT, THOUGH?].
 \end{itemize}
 
 I will augment this thesis statement with one of the following research directions:
