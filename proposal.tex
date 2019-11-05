@@ -13,6 +13,15 @@
 \usepackage[backend=bibtex]{biblatex}
 \addbibresource{bibliography.bib}
 
+\pdfinfo{%
+  /Title    (Derici, Thesis Proposal)
+  /Author   (Caner Derici)
+  /Creator  (Caner Derici)
+  /Producer (Caner Derici)
+  /Subject  (Thesis Proposal)
+  /Keywords (phd, thesis, proposal)
+}
+
 \begin{document}
 
 \input{common}
@@ -20,23 +29,19 @@
 \maketitle
 
 \begin{abstract}
-  \input{abstract}
+  \inputsec{abstract}
 \end{abstract}
-
-%\input{esop-full}
-%\input{infer-full}
 
 \section{Introduction}
 
 To contextualize the thread of work I propose in this thesis, this
-section gives a general introduction to ..., and then motivates the
-idea of ...
+section gives a general introduction to the rapid implementation of
+dynamic programming languages using meta-tracing, and then provides a
+general introduction on the problem of self-hosting on meta-tracing.
 
-%\input{esop-intro}
-%\input{auto-ann-intro}
-%\input{spec-intro}
+\inputsec{meta-trace-intro}
 
-\input{thesis-statement}
+\inputsec{thesis-statement}
 
 \section{Technical Overview}
 
