@@ -39,6 +39,7 @@
 \newpage
 
 \section{Introduction}
+\label{sec:intro}
 
 To contextualize the thread of work I propose in this thesis, this
 section gives a general introduction to the rapid implementation of
@@ -46,75 +47,32 @@ dynamic programming languages using meta-tracing, and then provides a
 general introduction on the problem of self-hosting on meta-tracing.
 
 \inputsec{meta-trace-intro}
-
 \inputsec{racket-intro}
-
 \inputsec{meta-trace-prob}
+
+\section{Thesis Statement}
+\label{sec:thesis}
 
 \inputsec{thesis-statement}
 
 \section{Technical Overview}
+\label{sec:technical}
 
-%\input{esop-overview}
-
-%\input{esop-formal-model}
-
-%\input{esop-metatheory}
-
-\subsection{RPython Framework}
-
-\subsection{Language Portability via Linklets}
-
-\subsection{Pycket: A Full Racket Implementation}
-
-\subsection{Performance Flaws of Self-Hosting on JIT Compilers}
-
-\subsection{Approaches on Increasing Performance}
-
-\subsubsection{A Second Interpreter in Play}
-
-\subsubsection{Meta-hints for Interpreter-JIT Communication}
+\inputsec{rpython}
+\inputsec{linklets}
+\inputsec{pycket}
+\inputsec{performance-issues}
+\inputsec{solution-approaches}
 
 \section{Related Work}
+\label{sec:related}
 
-% one sentence
-
-% What's diff about TC from the related work
-% small summary for diesel....
-% - diesel supports x
-%  - calculus supports some subset of x
-% we support y, which covers most of x but also foo
+\inputsec{related}
 
 \section{Research Plan and Timeline}
+\label{sec:timeline}
 
-I have already made progress towards my thesis:
-
-\begin{itemize}
-  \item .....
-\end{itemize}
-
-To complete my thesis, I plan to follow this timeline:
-
-\begin{itemize}
-  \item \textbf{[June-July 2018 - Completed]} this one
-    \begin{itemize}
-    \item do this
-    \end{itemize}
-  \item \textbf{[July-August 2018 - Completed]} that one
-    \begin{itemize}
-      \item do that
-    \end{itemize}
-  \item \textbf{[January-May 2019]} Write dissertation
-  \item \textbf{[June 2019]} Defend
-\end{itemize}
-
-\subsection{Publications}
-
-I plan to publish the following papers:
-
-\begin{itemize}
-  \item \textbf{2020} \emph{cool paper}
-\end{itemize}
+\inputsec{timeline}
 
 \printbibliography
 
