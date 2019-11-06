@@ -1,4 +1,5 @@
 *.pdf
+*.toc
 *.aux
 *.log
 *.swp
