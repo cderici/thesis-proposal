@@ -2,20 +2,34 @@ This thesis presents the challenge of having an efficient
 implementation of a self-hosting functional language on a meta-tracing
 framework and argues that it is achievable.
 
-I start by discussing how meta-tracing enables rapid prototyping
-efficient dynamic language implementations, and how it is shown to
-make a fast Racket interpreter, namely Pycket.
+I will start by discussing how meta-tracing enables rapid prototyping
+efficient dynamic language implementations. We will discuss the use of
+interpreter hints in meta-tracing to allow discovering and tracing the
+loops in a user program, rather than in the interpeter evaluating
+it. I will also discuss how meta-tracing is shown to make a fast
+Racket interpreter, namely Pycket. This will be the backbone of our
+further discussion.
 
-Next I will study how Racket made its implementation a bit more
-independent from the run-time using linklets, thereby achieving a
-greater flexibility to target different virtual machines.
+Next I will introduce the linklets to study how Racket made its
+implementation more independent from the run-time, thereby achieving a
+greater flexibility to target different virtual machines starting with
+Chez Scheme. I will develop a formal model of linklets to investigate
+how they work, and study how the communication between the front and
+back-end of Racket is established via the linklets.
 
-Then I will demonstrate the process of incorporating linklets into
-Pycket to turn it into a full implementation of Racket on RPython.
+Then I will demonstrate the process of incorporating linklets into the
+Pycket to turn it into a full implementation of Racket. We will
+discuss how the self-hosting of Racket works with bootstrapping
+linklets, and demonstrate how loading and evaluating a Racket module
+on Pycket works from start to end.
 
-Then I will study the performance issues fundamental to
-meta-tracing an interpreter for a self-hosting language using Pycket
-as an example.
+Next I will provide some preliminary experiments to reveal the key
+performance issues fundamental to implementing a self-hosting
+functional language on a meta-tracing framework, such as the GC
+pressure in the run-time and tracing programs with non-trivial control
+flow paths.
 
 Finally I will dicuss approaches to addressing those issues and
-propose solutions.
+propose solutions that will improve the performance enough to justify
+using meta-tracing to implement VMs for self-hosting functional
+languages.
