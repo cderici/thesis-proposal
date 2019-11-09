@@ -320,11 +320,12 @@ the reference to the target instance is returned.
 \def\where {\textbf{where}\;}
 \def\rel {&\longrightarrow_{\beta p}\;}
 
-\begin{figure*}[tbp]
+\begin{figure}[tbp]
   \begin{mdframed}
     \begin{align*}
       \rcinput{x} \rcrel \rcoutput{\sigma[\rho[x]]}{\rho}{\sigma} \\
-      \rcinput{(\textbf{var\dash ref}\; x))} \rcrel \rcoutput{v}{\rho}{\sigma}\; \where x \in \rho, \rho[x] \in \sigma, v = \sigma[\rho[x]]\; \&\; v \neq uninit\\
+      \rcinput{(\textbf{var\dash ref}\; x))} \rcrel \rcoutput{v}{\rho}{\sigma} \\
+      \;    &\; \hspace{2cm} \where x \in \rho, \rho[x] \in \sigma, v = \sigma[\rho[x]]\; \&\; v \neq uninit\\
       \rcinput{(\textbf{var\dash ref/no\dash check}\; x))} \rcrel \rcoutput{v}{\rho}{\sigma}\; \where v = \sigma[\rho[x]] \\
       \rcinput{(\textbf{var\dash set!}\; x\; v)} \rcrel \rcoutput{(void)}{\rho}{\sigma_1} \where \sigma_1 = \sigma[\rho[x]\rightarrow v]\\
       \rcinput{(\textbf{var\dash set/check\dash undef!}\; x\; v)} \rcrel \rcoutput{(void)}{\rho}{\sigma_1} \where \sigma_1 = \sigma[\rho[x]\rightarrow v], x \in \rho\\
@@ -336,14 +337,15 @@ the reference to the target instance is returned.
         e_1 & otherwise
       \end{cases*}\\
       \rcinput{(o\; v_1\; v_2)} \rcrel \rcoutput{\delta(v_1,v_2)}{\rho}{\sigma} \\
-      \rcinput{((closure\; (x\; \ldots)\; e\; \rho_c)\;v\;\ldots)} \rcrel \rcoutput{e}{\rho_1}{\sigma_1} \where \rho_1 = \rho_c\overline{[x\rightarrow cell]}, \sigma_1 = \sigma\overline{[cell\rightarrow v]}, cell \notin \sigma \\
+      \rcinput{((closure\; (x\; \ldots)\; e\; \rho_c)\;v\;\ldots)} \rcrel \rcoutput{e}{\rho_1}{\sigma_1} \\
+      \;     &\; \hspace{1cm} \where \rho_1 = \rho_c\overline{[x\rightarrow cell]}, \sigma_1 = \sigma\overline{[cell\rightarrow v]}, cell \notin \sigma
     \end{align*}
     \caption{Reduction Relation for Racket Core}
     \label{fig:rc-reduction}
   \end{mdframed}
-\end{figure*}
+\end{figure}
 
-\begin{figure*}[tbp]
+\begin{figure}[tbp]
   \begin{mdframed}
     \begin{align*}
       \redinput{\bm{\Phi^V}(x_{li},\; x)} \rel \redoutput{v}{\rho}{\sigma} \where v\; =\; \sigma[(\sigma[x_{li}])[x]] \\
@@ -364,7 +366,8 @@ the reference to the target instance is returned.
     \caption{Reduction Relation}
     \label{fig:reduction}
   \end{mdframed}
-\end{figure*}
+\end{figure}
+
 
 \newcommand{\runio}[1]{run\dash prog(#1, \rho, \sigma)\;}
 \newcommand{\prog}[2]{(\textbf{program}\; (\textbf{use\dash linklets}\;#1 )\;#2)}
