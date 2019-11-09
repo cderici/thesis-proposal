@@ -1,0 +1,434 @@
+\subsubsection{Operational Semantics of Linklets}
+
+Linklets are lambda-like forms that consume and produce potentially
+mutable variables (instead of values). They act as units of
+compilation in Racket runtime, where for a given Racket module the
+expander produces a bundle of linklets that will be consumed by the
+runtime compiler. The following sections explain what linklets are and
+how they work to evaluate Racket modules and implement functionalities
+such as top-level.
+
+Figure \ref{fig:linklet-source} shows the grammar of the linklet
+language, which is a minimal subset of the Fully Expanded Racket
+Programs extended with the \verb|linklet| form and toplevel
+definitions. Figure \ref{fig:racket-source} presents the grammar for
+the Racket part of the language, which is used within the linklet
+body. In the remainder of this document we will call this sub-language
+Racket Core (RC). RC is basically a $\lambda$-calculus with a handful of
+syntactic extensions, as well as some additional forms to manipulate
+linklet variables (e.g. \emph{var-ref}).
+
+A linklet consists of a set of variable definitions and expressions,
+an exported subset of the defined variable names, a set of variables
+to export from the linklet despite having no corresponding definition,
+and a set of imports that provide other variables for the linklet to
+use. To run a linklet, it is instantiated as a \emph{linklet
+  instance}. When a linklet is instantiated, it receives other linklet
+instances for its imports, and it extracts a specified set of
+variables that are exported from each of the given instances. The
+newly created linklet instance provides its exported variables for use
+by other linklets. Moreover, instead of freshly creating an instance,
+an instantiation may be provided with an additional linklet instance
+as an input, namely the target instance. In this case, the target
+instance is used and modified for the linklet definitions and
+expressions during the evaluation of the body expressions, and the
+result is the value of the last expression in the linklet. In the
+remainder of this document we will use the names ``targeted
+instantiation'' and ``regular instantiation'' for these two modes.
+
+
+\begin{figure}[tbp]
+  \begin{align*}
+    L  &::= (\textbf{linklet}\:((imp\: \ldots)\: \ldots)\:(exp\: \ldots)\:l\dash top\:\ldots\:e)\\
+    l\dash top &::= (\textbf{define\dash values}\:(x)\:e)\:|\:e \\
+    imp &::= x\:|\:(x x) \tag*{[external internal]}\\
+    exp &::= x\:|\:(x x) \tag*{[internal external]}
+  \end{align*}
+  \caption{Linklet Source Language}
+  \label{fig:linklet-source}
+\end{figure}
+
+\begin{figure}[tbp]
+  \begin{align*}
+    e &::=\; x\; |\; v\; |\; (e\; e\; \ldots)\; |\; (\textbf{if}\; e\; e\; e)\; |\; (o\; e\; e)\; \\
+    \; &|\; (\textbf{begin}\; e\; e\; \ldots)\; |\; (\textbf{lambda}\; (x_{\_!\_}\; \ldots)\; e)\\
+    \; &|\; (\textbf{set!}\; x\; e)\; |\; (\textbf{raises}\; e)\\
+    \; &|\; (\textbf{var\dash ref}\; x)\; |\; (\textbf{var\dash ref/no\dash check}\; x) \\
+    \; &|\; (\textbf{var\dash set!}\; x\; e)\; |\; (\textbf{var\dash set/check\dash undef!}\; x\; e) \\
+    v   &::=\; n\; |\; b\; |\; c\; |\; (void)\;|\; uninit \\ %;; values
+    c   &::=\; (closure\; (x\; \ldots)\; e\; \rho) \\
+    n   &::=\; number \\
+    b   &::=\; true\; |\; false \\
+    var &::=\; variable\dash not\dash otherwise\dash mentioned \\ %;; variables
+    x,\; cell &::=\; variable\dash not\dash otherwise\dash mentioned \\ %;; variables
+    o  &::=\; +\; |\; * |\; < \\
+    \rho   &::=\; ((x\; var)\; \ldots) \tag*{[Environment]}\\
+    \sigma   &::=\; ((var\; v)\; \ldots) \tag*{[Store]}\\
+    E   &::=\; []\; |\; (v\; \ldots\; E\; e\; \ldots)\; |\; (o\; E\; e)\; |\; (o\; v\; E) \\
+    \;  &|\; (\textbf{var\dash set!}\; x\; E)\; |\; (\textbf{var\dash set/check\dash undef!}\; x\; E) \\
+    \;  &|\; (\textbf{begin}\; v\; \ldots\; E\; e\; \ldots)\; |\; (\textbf{set!}\; x\; E)\; |\; (\textbf{if}\; E\; e\; e)
+  \end{align*}
+  \caption{Racket Core Language (RC)}
+  \label{fig:racket-source}
+\end{figure}
+
+
+The minimal API for a runtime to use the linklets consists of the
+functions \textbf{i)} \verb|compile-linklet| for preparing a linklet
+for instantiation and \textbf{ii)} \verb|instantiate-linklet| for
+running a compiled linklet.
+
+\def\la {\bm{L_\alpha}}
+\def\lb {\bm{L_\beta}}
+
+\begin{figure}[tbp]
+  \begin{align*}
+    CL             &::=\; \bm{\Phi^C}(L)\\
+    L\dash obj     &::= (\la\; c\dash imps \; c\dash exps \; l\dash top \ldots)\\
+    \;           &\;|\; (\lb\; x\; l\dash top\; \ldots) \\
+    LI             &::=\; (\textbf{linklet\dash instance}\; (x\; var)\; \ldots) \\
+    c\dash imps    &::=\; ((imp\dash obj\; \ldots)\; \ldots)\\
+    c\dash exps    &::=\; (exp\dash obj\; \ldots)\\
+    imp\dash obj   &::=\; (\textbf{Import}\; x\; x\; x) \tag*{[id int ext]} \\
+    exp\dash obj   &::=\; (\textbf{Export}\; x\; x\; x) \tag*{[id int ext]} \\
+  \end{align*}
+  \hfill \footnotesize $\Phi^C : \textbf{compile\dash linklet}$
+\caption{Linklet Runtime Language}
+\label{fig:linklet-runtime}
+\end{figure}
+
+Figure \ref{fig:linklet-runtime} shows the grammar of the run\dash
+time language for linklets, i.e. expressions that represent the
+run\dash time objects used in the instantiation of linklets. Given a
+linklet L, \verb|compile-linklet| produces a linklet object $\la$ that
+is ready to be instantiated. $\la$ consists of \textit{Import} and
+\textit{Export} objects for the identifiers denoting the imported and
+exported variables, and the body expressions with potentially some
+additional expressions for variable manipulations in the run\dash
+time. Each \textit{Import} and \textit{Export} object consists of two
+identifiers that are internal and external with respect to the linklet
+body (a variable may be imported/exported with different names), and
+one gensymed\footnote{is there a good name for this?} identifier for
+internal use during the instantiation. After compiling, before an
+actual instantiation of a linklet object begins, the \textit{Import}
+and \textit{Export} objects are processed. As we detail in Section
+\ref{sec:instantiate}, references for the imported variables are
+collected from the given import instances, and additional variables
+may be created for exported variables. $\lb$ denotes a compiled
+linklet object after such a preparation step, with which the actual
+instantition may begin. Note that $\lb$ contains only a reference (to
+a linklet instance that is used during the instantiation) and the body
+expressions, and doesn't contain the import and export objects, as the
+instantiation uses the variables that are already prepared for
+them. Finally a \textbf{linklet\dash instance} is represented as a
+finite mapping from identifiers to variables (i.e. cells in the heap).
+
+
+\begin{figure}[h]
+\begin{verbatim}
+(program
+  ([l (linklet () (a) (define-values (a) 5) a)])
+  (let-inst i (instantiate-linklet l)
+    (instance-variable-value i a)))
+\end{verbatim}
+\caption{An example \textit{program}}
+\label{fig:program-example}
+\end{figure}
+
+Since the linklets are lambda\dash like binding forms and not capable
+of starting a computation by themselves, we introduce a top\dash level
+form, namely \verb|program|. A \verb|program| consists of a set of
+given linklets to be loaded and a single top\dash level expression to
+perform a computation. Figure \ref{fig:linklet-program} shows the
+grammar for \verb|program|s. We provided the \verb|let-inst| form to
+name a linklet instance, and \verb|seq| form to perform multiple
+computations in sequence. Figure \ref{fig:program-example} shows an
+example \verb|program|.
+
+\begin{figure}[h!]
+  \begin{align*}
+    p           &::=\; (\textbf{program}\; ((x\; L)\; \ldots)\; p\dash top) \\
+    p\dash top  &::=\; v\; |\; (\textbf{let\dash inst}\; x\; p\dash top\;p\dash top)\; |\; (\textbf{seq}\; p\dash top\; \ldots) \\
+    \;          &\;|\; \bm{\Phi^I}(l\dash ref\; x\; \ldots)\; |\; \bm{\Phi^I}(l\dash ref\; x\; \ldots\; \textbf{\#:t}\; x)\; |\; \bm{\Phi^V}(x\; x) \\
+    l\dash ref &::=\; x\; |\; L\dash obj \\
+    v           &::=\; ....\;|\;(v\;x) \\
+    EP          &::=\; [] \\
+    \;          &\;|\; \bm{\Phi^I}((\lb\; x\; v\; \ldots\; EP\; l\dash top\; \ldots)\; x\; \ldots) \\
+    \;          &\;|\; (\textbf{define\dash values}\:(x)\:EP) \\
+    \;          &\;|\; (\textbf{let\dash inst}\; x\; EP\; p\dash top)\; |\; (\textbf{seq}\; v\; \ldots\; EP\; p\dash top\; \ldots) \\
+    \;          &\;|\; (\textbf{program}\; ()\; EP) \\
+  \end{align*}
+  \hfill \footnotesize $\Phi^V : \textbf{instance\dash variable\dash value}\:,\: \Phi^I : \textbf{instantiate\dash linklet}$
+\caption{Linklet Programs}
+\label{fig:linklet-program}
+\end{figure}
+
+\paragraph{Program Evaluation} starts with compiling and loading the given
+set of linklets. After the given linklets are loaded, the expression
+in the body is evaluated. Figure \ref{fig:reduction} shows the
+reduction relation, $\beta_p$, that implements the evaluation, together
+with the reduction relation for RC, $\beta_r$, that is shown in Figure
+\ref{fig:rc-reduction}. For clarity, the reduction of programs and
+linklet instantiation is defined together by the same relation ($\beta_p$)
+so that the whole evaluation is defined as a relexive-transitive
+closure of the same relation, generating a single small-step sequence
+of reductions from programs to values. The next subsections present
+the compilation and instantiation of linklets, as well as two example
+reductions for each instantiation modes (i.e. regular and targeted).
+
+
+Before a linklet is ready for instantiation, several passes over the
+linklet are performed to ensure a correct information flow between the
+variables in the run\dash time. Figure \ref{fig:compile} shows the
+entire compilation procedure.
+
+For each import and export identifier (and possibly their
+corresponding renamings), \textit{Import} and \textit{Export} objects
+are created with the gensymed\footnote{[BETTER NAME]} references that
+will be used to name the variables that are dynamically created during
+the instantiation. Additionally, a pass on the linklet body collects
+all the identifiers that are defined within the linklet body (via
+\verb|define-values|) and all the mutated identifiers (i.e. targets of
+\verb|set!| expressions).
+
+Given a set of \textit{Import}s ($\mathit{C_I}$) and a set of
+\textit{Export}s ($\mathit{C_E}$), a set of toplevel defined
+identifiers ($\mathit{X_T}$) and a set of mutated identifiers
+($\mathit{X_M}$), the compilation starts to process each expression in
+the linklet body one by one, performing the following actions
+depending on the type of expression:
+
+\begin{itemize}
+ \item For a `(\textbf{define-values} (x) e)` expression where \newline
+   $(\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in \mathit{C_E}$ (i.e. x
+   is exported), add an additional `(\textbf{var-set!} $x_{gen}$ x)`
+   expression.
+ \item For a `(\textbf{set!} x e)` expression where \newline
+   $(\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in \mathit{C_E}$ (i.e. x
+   is exported), turn the expression into
+   `(\textbf{var-set/check-undef!} $x_{gen}$ e)`.
+ \item For any identifier x where $(\textbf{Import}\; x_{gen}\; x\;
+   x_{ext}) \in \mathit{C_I}$ (i.e. x is imported), turn the identifier
+   into \newline `(\textbf{var-ref/no-check} $x_{gen}$)` form.
+  \item For any identifier x where $(\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in
+    \mathit{C_E}$ and either $x \in \mathit{X_M}$ or $x \notin \mathit{X_T}$,
+    turn the identifier into `(\textbf{var-ref} $x_{gen}$)` form.
+  \item For any other expression e, recurse if e has subforms, return
+    otherwise.
+\end{itemize}
+
+\begin{figure}[h]
+\begin{verbatim}
+(compile-linklet
+  (linklet ((a)) (x)
+    (define-values (x) 5)
+    (set! x 6)
+    (+ x a)))
+
+(Lα (((Import a1 a a))) ((Export x1 x x))
+  (define-values (x) 5)
+  (var-set! x1 x)
+  (var-set/check-undef! x1 6)
+  (+ (var-ref x1) (var-ref/no-check a1)))
+\end{verbatim}
+\caption{An example linklet compilation [TODO: add line numbers]}
+\label{fig:compile-example}
+\end{figure}
+
+Figure \ref{fig:compile-example} shows an example compilation. The
+`(\textbf{var-set!} x1 x)` expression is added since the defined
+identifier x is exported. The `(\textbf{var-set/check-undef!} x1 6)`
+is introduced in place of the `(\textbf{set!} x 6)` expression, as the
+target identifier x is exported. Also, in `(+ x a)` expression,
+`(\textbf{var-ref} x1)` and `(\textbf{var-ref/no-check} a1)`
+expressions are introduced for the exported identifier x and imported
+identifier a respectively.
+
+
+After the compilation and loading phase in the program evaluation, all
+the linklet objects are in $\la$ form and ready to be instantiated. In
+general, an instantiation consists of preparing the import and export
+variables and then evaluating the expressions in the linklet body,
+much like $\beta$-reducing a lambda application.
+
+Recall that a linklet instantiation has two modes; \textbf{i)} regular
+instantiation, where a new instance is being created and returned
+after evaluating the body, and \textbf{ii)} targeted instantiation,
+where the given target instance is used during the
+instantiation. Since the only difference between the two modes is the
+return value based on whether a target instance is provided as an
+input, for simplicity in the model we remove the distinction between
+the modes by turning the regular instantiation into a targeted
+instantiation with a fresh empty instance. Moreover, the instantiation
+returns a pair of the last expression's value and the target instance
+being used. The caller of the \emph{instantiate-linklet} therefore
+decides to use either the value or the instance.
+
+Imported variables are collected from the given linklet instances by
+simply going through each set of \emph{Import} objects in the $\la$
+and the corresponding linklet instance that provides the
+variables. The collected variable references are then put into the
+environment with the names in the corresponding \emph{Import} objects
+that were generated for the variables during the
+compilation. Figure~\ref{fig:inst-utils} shows the processing of both
+the imported and exported variables.
+
+The use of the target instance during an instantiation comes into play
+when the exported variables are being processed. Recall that a linklet
+may export a variable despite having no corresponding definition for
+it. This is achieved by for each \emph{Export} object in $\la$
+grabbing the variable from the target instance if it has a mapping for
+it and making it available in the environment. Otherwise a fresh
+variable is created and its mapping is placed into the environment and
+into the target instance as well.
+
+After processing the import and export variables, the $\la$ object is
+reduced into $\lb$, which triggers the evaluation of the expressions
+in the linklet body. The linklet compilation makes sure that every
+variable reference within the body uses the appropriate variable, and
+at the beginning of the instantiation the preparation of the import
+and export variables explained above provides the actual variables in
+the environment to be modified and used. The reduction then proceeds
+with the evaluation of the body expressions one-by-one. After all the
+expressions are processed, a pair of the last expression's value and
+the reference to the target instance is returned.
+
+\newcommand{\redinput}[1]{EP\;\llbracket #1 \rrbracket, \rho, \sigma\;}
+\newcommand{\redoutput}[3]{EP\;\llbracket #1 \rrbracket, #2, #3\;}
+
+\newcommand{\rcinput}[1]{EP\;\llbracket E\;\llbracket #1 \rrbracket \rrbracket, \rho, \sigma\;}
+\newcommand{\rcoutput}[3]{EP\;\llbracket E\;\llbracket #1 \rrbracket \rrbracket, #2, #3\;}
+\def\rcrel {&\longrightarrow_{\beta r}\;}
+
+\def\where {\textbf{where}\;}
+\def\rel {&\longrightarrow_{\beta p}\;}
+
+\begin{figure*}[tbp]
+  \begin{align*}
+    \rcinput{x} \rcrel \rcoutput{\sigma[\rho[x]]}{\rho}{\sigma} \\
+    \rcinput{(\textbf{var\dash ref}\; x))} \rcrel \rcoutput{v}{\rho}{\sigma}\; \where x \in \rho, \rho[x] \in \sigma, v = \sigma[\rho[x]]\; \&\; v \neq uninit\\
+    \rcinput{(\textbf{var\dash ref/no\dash check}\; x))} \rcrel \rcoutput{v}{\rho}{\sigma}\; \where v = \sigma[\rho[x]] \\
+    \rcinput{(\textbf{var\dash set!}\; x\; v)} \rcrel \rcoutput{(void)}{\rho}{\sigma_1} \where \sigma_1 = \sigma[\rho[x]\rightarrow v]\\
+    \rcinput{(\textbf{var\dash set/check\dash undef!}\; x\; v)} \rcrel \rcoutput{(void)}{\rho}{\sigma_1} \where \sigma_1 = \sigma[\rho[x]\rightarrow v], x \in \rho\\
+    \rcinput{(\textbf{set!}\; x\; v)} \rcrel \rcoutput{(void)}{\rho}{\sigma_1} \where \sigma_1 = \sigma[\rho[x]\rightarrow v]\\
+    \rcinput{(\textbf{lambda}\; (x\; \ldots)\; e)} \rcrel \rcoutput{(closure\; (x\; \ldots)\; e\; \rho)}{\rho}{\sigma} \\
+    \rcinput{(\textbf{begin}\; v\; \ldots\; v_l)} \rcrel \rcoutput{v_l}{\rho}{\sigma} \\
+    \rcinput{(\textbf{if}\; v\; e_1\; e_2)} \rcrel \rcoutput{e}{\rho}{\sigma} \where e = \begin{cases*}
+      e_2 & if $v = false$ \\
+      e_1 & otherwise
+    \end{cases*}\\
+    \rcinput{(o\; v_1\; v_2)} \rcrel \rcoutput{\delta(v_1,v_2)}{\rho}{\sigma} \\
+    \rcinput{((closure\; (x\; \ldots)\; e\; \rho_c)\;v\;\ldots)} \rcrel \rcoutput{e}{\rho_1}{\sigma_1} \where \rho_1 = \rho_c\overline{[x\rightarrow cell]}, \sigma_1 = \sigma\overline{[cell\rightarrow v]}, cell \notin \sigma \\
+  \end{align*}
+  \caption{Reduction Relation for Racket Core}
+  \label{fig:rc-reduction}
+\end{figure*}
+
+\begin{figure*}[tbp]
+  \begin{align*}
+    \redinput{\bm{\Phi^V}(x_{li},\; x)} \rel \redoutput{v}{\rho}{\sigma} \where v\; =\; \sigma[(\sigma[x_{li}])[x]] \\
+    \redinput{(\textbf{let\dash inst}\; x\; (v\;x_i)\; p\dash top)} \rel \redoutput{p\dash top}{\rho}{\sigma_1} \where \sigma_1 = \sigma[x\rightarrow \sigma[x_i]] \\
+    \redinput{(\textbf{seq}\; v_{1}\; \ldots\; v_{n})} \rel \redoutput{v_{n}}{\rho}{\sigma} \\
+    \redinput{(\bm{\Phi^I}\; (\lb\; x\; v\; \ldots\; v_{l}))} \rel \redoutput{(v_{l}\; x)}{\rho}{\sigma} \\
+    EP\;\llbracket (\bm{\Phi^I}(\lb\; x_{t}\; v_p\; \ldots\; (\textbf{define\dash values}\; (x)\; v)\; l\dash top\; \ldots)) \rrbracket, \rel \redoutput{\bm{\Phi^I}(\lb\; x_{t}\; v_p\; \ldots\; l\dash top\; \ldots)}{\rho_1}{\sigma_1} \\
+    \;          &\;\; \where \rho_1 = \rho[x\rightarrow cell],\; \sigma_1 = \sigma[cell\rightarrow v] \\
+    \redinput{(\bm{\Phi^I}(\la\; c\dash imps \; c\dash exps \; l\dash top \ldots)\; LI\; \ldots)} \rel \redoutput{(\bm{\Phi^I}(\la\; c\dash imps \; c\dash exps \; l\dash top\; \ldots)\; LI\; \ldots\; \textbf{\#:t}\; x_{t})}{\rho}{\sigma_1} \\
+    \;          &\;\; \where x_t \notin \mathit{dom}(\sigma), \sigma_1 = \sigma[x_t\rightarrow (linklet\dash instance)] \\
+    EP\;\llbracket (\bm{\Phi^I}(\la\; c\dash imps \; c\dash exps \; l\dash top \ldots)\; LI\; \ldots\; \textbf{\#:t}\; x_{t}) \rrbracket, \rho, \sigma\; \rel \redoutput{(\bm{\Phi^I}(\lb\; x_{t}\; l\dash top\; \ldots))}{\rho_2}{\sigma_1} \\
+    \; &\;\; \where \rho_1 = \mathit{V}^I(c\dash imps, (LI\; \ldots), \rho) \\
+    \;          &\;\; \hspace{0.4cm} (\rho_2, \sigma_1) = \mathit{V}^E(c\dash exps, x_t, \rho_1, \sigma) \\
+    (\textbf{program}\; ((x\;L),(x_1\;L_1)\;\ldots)\;p\dash top), \rho, \sigma &\longrightarrow_{\beta p}\; (\textbf{program}\; ((x_1\;L_1)\;\ldots)\;p\dash top[x := \bm{\Phi^C}(L)]), \rho, \sigma \\ \\
+    eval^{\longrightarrow_{\beta p}}(p) &=\; v\; \textbf{if}\; p, (), () \twoheadrightarrow_{\beta p\cup\beta r} \; (\textbf{program}\; ()\;(v\;\_)) \\
+  \end{align*}
+  \hfill \footnotesize $\Phi^V : \textbf{instance\dash variable\dash value}\:,\: \Phi^I : \textbf{instantiate\dash linklet},\: \mathit{V}^I : \textbf{get  import variables},\: \mathit{V}^E : \textbf{create variables for exports}$
+\caption{Reduction Relation}
+\label{fig:reduction}
+\end{figure*}
+
+\newcommand{\runio}[1]{run\dash prog(#1, \rho, \sigma)\;}
+\newcommand{\prog}[2]{(\textbf{program}\; (\textbf{use\dash linklets}\;#1 )\;#2)}
+\def\transrel {&\twoheadrightarrow_{p}\;}
+
+\begin{figure*}[tbp]
+  \begin{align*}
+    \mathit{V}^I : c\dash imps \times (LI\;\ldots) \times \rho &\longrightarrow \rho \\
+    \mathit{V}^I((\overline{(\overline{(\textbf{Import}\; x_{id}\;x_{int}\;x_{ext})})_n}), (\overline{LI_n}), \rho) &= \rho\overline{[x_{id}\rightarrow LI_n[x_{ext}]]}\\ \\
+    %% \mathit{V}^I : c\dash imps \times (LI\;\ldots) \times \rho &\longrightarrow \rho \\
+    %% \mathit{V}^I((), (), \rho) &= \rho \\
+    %% \mathit{V}^I((()\;(imp\dash obj\; \ldots)\;\ldots), (LI\;LI_r\;\ldots), \rho) &= \mathit{V}^I(((imp\dash obj\; \ldots)\;\ldots), (LI_r\;\ldots), \rho) \\
+    %% \mathit{V}^I((((\textbf{Import}\; x_{id}\;x_{int}\;x_{ext})\;imp\dash obj\;\ldots)\;\ldots), (LI\;LI_r\;\ldots), \rho) &= \mathit{V}^I(((imp\dash obj\;\ldots)\;\ldots), (LI\;LI_r\;\ldots), \rho[x_{id}\rightarrow var]) \\
+    %% \;          &\; \where var = LI(x_{ext}) \\ \\
+    \mathit{V}^E : c\dash exps \times x \times \rho \times \sigma &\longrightarrow \rho \times \sigma \\
+    \mathit{V}^E((exp\dash obj\;\ldots), x_t, \rho, \sigma) &= \mathit{P}(exp\dash obj, x_t, \sigma[x_t], \rho, \sigma)\;\ldots\\
+    \mathit{P}((\textbf{Export}\;x_{id}\;x_{int}\;x_{ext}), x_t, LI_t, \rho, \sigma) &= \begin{cases*}
+      \rho_1, \sigma & if $\;x_{ext} \in dom(LI_t)$, \where $\rho_1 = \rho[x_{id}\rightarrow LI_t[x_{ext}]]$ \\
+      \rho_1, \sigma_1 & if $\;x_{ext} \notin dom(LI_t)$, \where $\rho_1 = \rho[x_{id}\rightarrow var_{new}]$\\
+      \;        &\; \hspace{2.6cm} $var_{new} \notin \sigma$ \\
+      \;        &\; \hspace{2.6cm} $\sigma_1 = \sigma[var_{new}\rightarrow uninit,$ \\
+      \;        &\; \hspace{3.2cm} $x_t\rightarrow LI_t[x_{ext}\rightarrow var_{new}]]$
+    \end{cases*} \\
+    %% \mathit{P}((\textbf{Export}\;x_{id}\;x_{int}\;x_{ext}), x_t, \rho, \sigma) &= \rho_1, \sigma_1\; \where \\
+    %% \;          &\; \rho_1 = \rho[x_{id}\rightarrow A] \\
+    %% \;          &\; A = \begin{cases*}
+    %%   LI_t[x_{ext}] & if $x_{ext} \in LI_t$ \\
+    %%   var_{new}     & o/w
+    %% \end{cases*} \\
+    %% \;          &\; \sigma_1 = \begin{cases*}
+    %%   \sigma & if $x_{ext} \in LI_t$ \\
+    %%   \sigma[var_{new}\rightarrow uninit, x_t\rightarrow LI_t[x_{ext}\rightarrow var_{new}]] & o/w
+    %% \end{cases*} \\
+    %% \;          &\; var_{new} \notin LI_t \cup \sigma \\
+    %% \;          &\; LI_t = \sigma[x_t] \\
+  \end{align*}
+  \hfill \footnotesize $\mathit{V}^I : \textbf{get  import variables},\: \mathit{V}^E : \textbf{create variables for exports}$
+\caption{Instantiation Utilities}
+\label{fig:inst-utils}
+\end{figure*}
+
+
+\begin{figure*}[tbp]
+  \small
+  \begin{align*}
+    \Phi^C : L &\longrightarrow L\dash obj \\
+    \Phi^C((\textbf{linklet}\; ((imp\; \ldots)\; \ldots)\; (exp\; \ldots)\; l\dash top\; \ldots))\; &=\; (\la\; c\dash imps\; c\dash exps\; l\dash top_1\; \ldots) \\
+    \;        &\; \where l\dash top_1\; \ldots\; =\; \Phi^C_{\textbf{e}}(l\dash top,(),(x_M\;\ldots),(x_T\;\ldots))\; \ldots \\
+    \;        &\; c\dash imps = \mathit{create\dash import\dash objects}(((imp\; \ldots)\; \ldots)) \\
+    \;        &\; c\dash exps = \mathit{create\dash export\dash objects}((exp\; \ldots)) \\
+    \;        &\; (x_T\;\ldots) = toplevel\dash ids(l\dash top\; \ldots) \\
+    \;        &\; (x_M\;\ldots) = mutated\dash ids(l\dash top\; \ldots) \\ \\
+    \mathit{create\dash import\dash objects} : ((imp\; \ldots)\; \ldots) &\longrightarrow ((imp\dash obj\; \ldots)\; \ldots) \\
+    \mathit{create\dash import\dash objects}((imp_n\; \ldots)\; \ldots)\; &=\; ((imp\dash obj_n\; \ldots)\; \ldots) \\
+    \;   \where imp\dash obj_n  &=\; \begin{cases*}
+      (\textbf{Import}\;x_{gen}\;x\;x) & if $imp_n = x$ \\
+      (\textbf{Import}\;x_{gen}\;x_{int}\;x_{ext}) & if $imp_n = (x_{ext}\;x_{int})$ \\
+    \end{cases*} \\
+    \;     x_{gen} &\notin\; ((imp_n\; \ldots)\; \ldots) \\ \\
+    \mathit{create\dash export\dash objects} : (exp\; \ldots) &\longrightarrow (exp\dash obj\; \ldots) \\
+    \mathit{create\dash export\dash objects}(exp_n\; \ldots)\; &=\; (exp\dash obj\; \ldots) \\
+    \;   \where exp\dash obj_n  &=\; \begin{cases*}
+      (\textbf{Export}\;x_{gen}\;x\;x) & if $exp_n = x$ \\
+      (\textbf{Export}\;x_{gen}\;x_{int}\;x_{ext}) & if $exp_n = (x_{int}\;x_{ext})$ \\
+    \end{cases*} \\
+    \;     x_{gen} &\notin\; (exp_n\; \ldots) \\ \\
+    \Phi^C_{\textbf{e}} : l\dash top \times \mathit{C_I} \times \mathit{C_E} \times \mathit{X_L} \times \mathit{X_M} \times\mathit{X_T} &\longrightarrow l\dash top\; \ldots \\
+    \;          &\;\; \where \mathit{C_I} : (c\dash imps\;\ldots), \mathit{C_E} : (c\dash exps\;\ldots) \\
+    \;          &\;\; \mathit{X_L} : (x\;\ldots), \mathit{X_M} : (x\;\ldots), \mathit{X_T} : (x\;\ldots) \\
+    \Phi^C_{\textbf{e}}((\textbf{define\dash values}\:(x)\:e),\mathit{C_I}, \mathit{C_E}, \mathit{X_L},\mathit{X_M},\mathit{X_T})\; &=\; \begin{cases*}
+      (\textbf{define\dash values}\:(x)\:e), (var\dash set!\; x_{gen}\; x)\;\; \;\; if\; (\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_E} \\
+      (\textbf{define\dash values}\:(x)\:e) \hspace{2.5cm} \;\; otherwise
+    \end{cases*} \\
+    \Phi^C_{\textbf{e}}((\textbf{set!}\; x\; e),\mathit{C_I}, \mathit{C_E}, \mathit{X_L},\mathit{X_M},\mathit{X_T})\; &=\; \begin{cases*}
+      (\textbf{var\dash set/check\dash undef!}\; x_{gen}\; e) \hspace{1.4cm} if\; (\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_E}\\
+      (\textbf{set!}\; x\; e) \hspace{4.3cm} otherwise
+    \end{cases*} \\
+    \Phi^C_{\textbf{e}}(x,\mathit{C_I}, \mathit{C_E}, \mathit{X_L},\mathit{X_M},\mathit{X_T})\; &=\; \begin{cases*}
+      (\textbf{var\dash ref/no\dash check}\; x_{gen}) \hspace{1.5cm} if\; (\textbf{Import}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_I} \\
+      (\textbf{var\dash ref}\; x_{gen}) \hspace{2.9cm} if\; (\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_E}\;\; \&\;\; x\in \mathit{X_M} \\
+      (\textbf{var\dash ref}\; x_{gen}) \hspace{2.9cm} if\; (\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_E}\;\; \&\;\; x\notin \mathit{X_T} \\
+      x \hspace{4.6cm} otherwise
+    \end{cases*} \\
+    \Phi^C_{\textbf{e}}(e,\mathit{C_I}, \mathit{C_E}, \mathit{X_L},\mathit{X_M},\mathit{X_T})\; &=\; recurse \\
+  \end{align*} \\
+\caption{Compile Linklet}
+\label{fig:compile}
+\end{figure*}
