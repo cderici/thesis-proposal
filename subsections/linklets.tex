@@ -1,9 +1,14 @@
 \subsection{Language Portability via Linklets}
 \label{subsec:linklets}
 
-This section first details what linklets are and how they work, and
-then demonstrates how Racket expands and communicates Racket modules
-with the run-time compiler.
+Linklets are lambda-like forms that consume and produce potentially
+mutable variables (instead of values). They act as units of
+compilation in Racket run-time, where for a given Racket module the
+expander produces a bundle of linklets that will be consumed by the
+run-time compiler. The following sections explain what linklets are
+and how they work to evaluate Racket modules and implement
+functionalities such as top-level, all outside of the run-time
+implementation.
 
 \inputsec{linklets-howto}
 
