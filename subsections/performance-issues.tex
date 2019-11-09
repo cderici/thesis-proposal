@@ -6,8 +6,13 @@ Here's the technical details of the main issues about self-hosting on
 meta-tracing.
 
 \begin{itemize}
-\item GC pressure on the heap (caused by long chain of continuations)
+\item GC pressure on the heap (caused by long chain of continuations),
+  talk about the depth of real world Racket programs like read, expand
+  etc.
 
 \item (main issue) Confused traces because of complex control flow
-(branchy dispatch loops)
+  (branchy dispatch loops)
+
+  branchy code, with experiments, show traces
+  
 \end{itemize}
