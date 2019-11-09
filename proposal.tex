@@ -47,8 +47,8 @@ dynamic programming languages using meta-tracing, and then provides a
 general introduction on the problem of self-hosting on meta-tracing.
 
 \inputsec{meta-trace-intro}
-\inputsec{racket-intro}
 \inputsec{meta-trace-prob}
+\inputsec{racket-intro}
 
 \section{Thesis Statement}
 \label{sec:thesis}
@@ -58,21 +58,24 @@ general introduction on the problem of self-hosting on meta-tracing.
 \section{Technical Overview}
 \label{sec:technical}
 
-In this section, I will expand on the introduction, and start in
-\secref{subsec:rpython} with discussing the RPython framework and how
-meta-tracing works. Then I will detail how the increased language
-portability is achieved in Racket via linklets in
-\secref{subsec:linklets}. I will continue in \secref{subsec:pycket}
-with explaining how Pycket can be a full implementation of
-Racket. Then in \secref{subsec:performance} I will discuss in detail
-the problem we tackle in this thesis, and finally I will talk about
-our solution approaches with preliminary experiments and formalism in
-\secref{subsec:solutions}.
+In this section, I will expand on the introduction, and start with
+discussing in \secref{subsec:rpython} the RPython framework and how
+meta-tracing works. Then in \secref{subsec:performance}, I will
+introduce in detail the problems we will attempt to address in this
+thesis with preliminary experiments. Next we move on to building our
+tool on which we will discuss and demonstrate our solution
+approaches. I will start by detailing how language portability is
+increased in Racket via the linklets in \secref{subsec:linklets}. Then
+I will continue in \secref{subsec:pycket} with explaining how Pycket
+incorporates the linklets to become a full implementation of
+self-hosting Racket. Finally I will discuss our solution approaches to
+the performance issues introduced earlier with experiments and
+formalism using Pycket in \secref{subsec:solutions}.
 
 \inputsec{rpython}
+\inputsec{performance-issues}
 \inputsec{linklets}
 \inputsec{pycket}
-\inputsec{performance-issues}
 \inputsec{solution-approaches}
 
 \section{Related Work}
