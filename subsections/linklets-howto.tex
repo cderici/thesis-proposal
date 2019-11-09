@@ -346,6 +346,7 @@ the reference to the target instance is returned.
 \end{figure}
 
 \begin{figure}[tbp]
+  \small
   \begin{mdframed}
     \begin{align*}
       \redinput{\bm{\Phi^V}(x_{li},\; x)} \rel \redoutput{v}{\rho}{\sigma} \where v\; =\; \sigma[(\sigma[x_{li}])[x]] \\
@@ -412,51 +413,51 @@ the reference to the target instance is returned.
 \end{figure*}
 
 
-\begin{figure*}[tbp]
-  \small
-  \begin{mdframed}
-    \begin{align*}
-      \Phi^C : L &\longrightarrow L\dash obj \\
-      \Phi^C((\textbf{linklet}\; ((imp\; \ldots)\; \ldots)\; (exp\; \ldots)\; l\dash top\; \ldots))\; &=\; (\la\; c\dash imps\; c\dash exps\; l\dash top_1\; \ldots) \\
-      \;        &\; \where l\dash top_1\; \ldots\; =\; \Phi^C_{\textbf{e}}(l\dash top,(),(x_M\;\ldots),(x_T\;\ldots))\; \ldots \\
-      \;        &\; c\dash imps = \mathit{create\dash import\dash objects}(((imp\; \ldots)\; \ldots)) \\
-      \;        &\; c\dash exps = \mathit{create\dash export\dash objects}((exp\; \ldots)) \\
-      \;        &\; (x_T\;\ldots) = toplevel\dash ids(l\dash top\; \ldots) \\
-      \;        &\; (x_M\;\ldots) = mutated\dash ids(l\dash top\; \ldots) \\ \\
-      \mathit{create\dash import\dash objects} : ((imp\; \ldots)\; \ldots) &\longrightarrow ((imp\dash obj\; \ldots)\; \ldots) \\
-      \mathit{create\dash import\dash objects}((imp_n\; \ldots)\; \ldots)\; &=\; ((imp\dash obj_n\; \ldots)\; \ldots) \\
-      \;   \where imp\dash obj_n  &=\; \begin{cases*}
-        (\textbf{Import}\;x_{gen}\;x\;x) & if $imp_n = x$ \\
-        (\textbf{Import}\;x_{gen}\;x_{int}\;x_{ext}) & if $imp_n = (x_{ext}\;x_{int})$ \\
-      \end{cases*} \\
-      \;     x_{gen} &\notin\; ((imp_n\; \ldots)\; \ldots) \\ \\
-      \mathit{create\dash export\dash objects} : (exp\; \ldots) &\longrightarrow (exp\dash obj\; \ldots) \\
-      \mathit{create\dash export\dash objects}(exp_n\; \ldots)\; &=\; (exp\dash obj\; \ldots) \\
-      \;   \where exp\dash obj_n  &=\; \begin{cases*}
-        (\textbf{Export}\;x_{gen}\;x\;x) & if $exp_n = x$ \\
-        (\textbf{Export}\;x_{gen}\;x_{int}\;x_{ext}) & if $exp_n = (x_{int}\;x_{ext})$ \\
-      \end{cases*} \\
-      \;     x_{gen} &\notin\; (exp_n\; \ldots) \\ \\
-      \Phi^C_{\textbf{e}} : l\dash top \times \mathit{C_I} \times \mathit{C_E} \times \mathit{X_L} \times \mathit{X_M} \times\mathit{X_T} &\longrightarrow l\dash top\; \ldots \\
-      \;          &\;\; \where \mathit{C_I} : (c\dash imps\;\ldots), \mathit{C_E} : (c\dash exps\;\ldots) \\
-      \;          &\;\; \mathit{X_L} : (x\;\ldots), \mathit{X_M} : (x\;\ldots), \mathit{X_T} : (x\;\ldots) \\
-      \Phi^C_{\textbf{e}}((\textbf{define\dash values}\:(x)\:e),\mathit{C_I}, \mathit{C_E}, \mathit{X_L},\mathit{X_M},\mathit{X_T})\; &=\; \begin{cases*}
-        (\textbf{define\dash values}\:(x)\:e), (var\dash set!\; x_{gen}\; x)\;\; \;\; if\; (\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_E} \\
-        (\textbf{define\dash values}\:(x)\:e) \hspace{2.5cm} \;\; otherwise
-      \end{cases*} \\
-      \Phi^C_{\textbf{e}}((\textbf{set!}\; x\; e),\mathit{C_I}, \mathit{C_E}, \mathit{X_L},\mathit{X_M},\mathit{X_T})\; &=\; \begin{cases*}
-        (\textbf{var\dash set/check\dash undef!}\; x_{gen}\; e) \hspace{1.4cm} if\; (\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_E}\\
-        (\textbf{set!}\; x\; e) \hspace{4.3cm} otherwise
-      \end{cases*} \\
-      \Phi^C_{\textbf{e}}(x,\mathit{C_I}, \mathit{C_E}, \mathit{X_L},\mathit{X_M},\mathit{X_T})\; &=\; \begin{cases*}
-        (\textbf{var\dash ref/no\dash check}\; x_{gen}) \hspace{1.5cm} if\; (\textbf{Import}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_I} \\
-        (\textbf{var\dash ref}\; x_{gen}) \hspace{2.9cm} if\; (\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_E}\;\; \&\;\; x\in \mathit{X_M} \\
-        (\textbf{var\dash ref}\; x_{gen}) \hspace{2.9cm} if\; (\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_E}\;\; \&\;\; x\notin \mathit{X_T} \\
-        x \hspace{4.6cm} otherwise
-      \end{cases*} \\
-      \Phi^C_{\textbf{e}}(e,\mathit{C_I}, \mathit{C_E}, \mathit{X_L},\mathit{X_M},\mathit{X_T})\; &=\; recurse \\
-    \end{align*} \\
-    \caption{Compile Linklet}
-    \label{fig:compile}
-  \end{mdframed}
-\end{figure*}
+%% \begin{figure*}[tbp]
+%%   \small
+%%   \begin{mdframed}
+%%     \begin{align*}
+%%       \Phi^C : L &\longrightarrow L\dash obj \\
+%%       \Phi^C((\textbf{linklet}\; ((imp\; \ldots)\; \ldots)\; (exp\; \ldots)\; l\dash top\; \ldots))\; &=\; (\la\; c\dash imps\; c\dash exps\; l\dash top_1\; \ldots) \\
+%%       \;        &\; \where l\dash top_1\; \ldots\; =\; \Phi^C_{\textbf{e}}(l\dash top,(),(x_M\;\ldots),(x_T\;\ldots))\; \ldots \\
+%%       \;        &\; c\dash imps = \mathit{create\dash import\dash objects}(((imp\; \ldots)\; \ldots)) \\
+%%       \;        &\; c\dash exps = \mathit{create\dash export\dash objects}((exp\; \ldots)) \\
+%%       \;        &\; (x_T\;\ldots) = toplevel\dash ids(l\dash top\; \ldots) \\
+%%       \;        &\; (x_M\;\ldots) = mutated\dash ids(l\dash top\; \ldots) \\ \\
+%%       \mathit{create\dash import\dash objects} : ((imp\; \ldots)\; \ldots) &\longrightarrow ((imp\dash obj\; \ldots)\; \ldots) \\
+%%       \mathit{create\dash import\dash objects}((imp_n\; \ldots)\; \ldots)\; &=\; ((imp\dash obj_n\; \ldots)\; \ldots) \\
+%%       \;   \where imp\dash obj_n  &=\; \begin{cases*}
+%%         (\textbf{Import}\;x_{gen}\;x\;x) & if $imp_n = x$ \\
+%%         (\textbf{Import}\;x_{gen}\;x_{int}\;x_{ext}) & if $imp_n = (x_{ext}\;x_{int})$ \\
+%%       \end{cases*} \\
+%%       \;     x_{gen} &\notin\; ((imp_n\; \ldots)\; \ldots) \\ \\
+%%       \mathit{create\dash export\dash objects} : (exp\; \ldots) &\longrightarrow (exp\dash obj\; \ldots) \\
+%%       \mathit{create\dash export\dash objects}(exp_n\; \ldots)\; &=\; (exp\dash obj\; \ldots) \\
+%%       \;   \where exp\dash obj_n  &=\; \begin{cases*}
+%%         (\textbf{Export}\;x_{gen}\;x\;x) & if $exp_n = x$ \\
+%%         (\textbf{Export}\;x_{gen}\;x_{int}\;x_{ext}) & if $exp_n = (x_{int}\;x_{ext})$ \\
+%%       \end{cases*} \\
+%%       \;     x_{gen} &\notin\; (exp_n\; \ldots) \\ \\
+%%       \Phi^C_{\textbf{e}} : l\dash top \times \mathit{C_I} \times \mathit{C_E} \times \mathit{X_L} \times \mathit{X_M} \times\mathit{X_T} &\longrightarrow l\dash top\; \ldots \\
+%%       \;          &\;\; \where \mathit{C_I} : (c\dash imps\;\ldots), \mathit{C_E} : (c\dash exps\;\ldots) \\
+%%       \;          &\;\; \mathit{X_L} : (x\;\ldots), \mathit{X_M} : (x\;\ldots), \mathit{X_T} : (x\;\ldots) \\
+%%       \Phi^C_{\textbf{e}}((\textbf{define\dash values}\:(x)\:e),\mathit{C_I}, \mathit{C_E}, \mathit{X_L},\mathit{X_M},\mathit{X_T})\; &=\; \begin{cases*}
+%%         (\textbf{define\dash values}\:(x)\:e), (var\dash set!\; x_{gen}\; x)\;\; \;\; if\; (\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_E} \\
+%%         (\textbf{define\dash values}\:(x)\:e) \hspace{2.5cm} \;\; otherwise
+%%       \end{cases*} \\
+%%       \Phi^C_{\textbf{e}}((\textbf{set!}\; x\; e),\mathit{C_I}, \mathit{C_E}, \mathit{X_L},\mathit{X_M},\mathit{X_T})\; &=\; \begin{cases*}
+%%         (\textbf{var\dash set/check\dash undef!}\; x_{gen}\; e) \hspace{1.4cm} if\; (\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_E}\\
+%%         (\textbf{set!}\; x\; e) \hspace{4.3cm} otherwise
+%%       \end{cases*} \\
+%%       \Phi^C_{\textbf{e}}(x,\mathit{C_I}, \mathit{C_E}, \mathit{X_L},\mathit{X_M},\mathit{X_T})\; &=\; \begin{cases*}
+%%         (\textbf{var\dash ref/no\dash check}\; x_{gen}) \hspace{1.5cm} if\; (\textbf{Import}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_I} \\
+%%         (\textbf{var\dash ref}\; x_{gen}) \hspace{2.9cm} if\; (\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_E}\;\; \&\;\; x\in \mathit{X_M} \\
+%%         (\textbf{var\dash ref}\; x_{gen}) \hspace{2.9cm} if\; (\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in\;\mathit{C_E}\;\; \&\;\; x\notin \mathit{X_T} \\
+%%         x \hspace{4.6cm} otherwise
+%%       \end{cases*} \\
+%%       \Phi^C_{\textbf{e}}(e,\mathit{C_I}, \mathit{C_E}, \mathit{X_L},\mathit{X_M},\mathit{X_T})\; &=\; recurse \\
+%%     \end{align*} \\
+%%     \caption{Compile Linklet}
+%%     \label{fig:compile}
+%%   \end{mdframed}
+%% \end{figure*}
