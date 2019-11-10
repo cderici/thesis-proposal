@@ -1,9 +1,9 @@
 all:
-	pdflatex proposal.tex 
+	pdflatex -shell-escape proposal.tex
 	bibtex proposal
-	pdflatex proposal.tex 
+	pdflatex -shell-escape proposal.tex
 	bibtex proposal
-	pdflatex proposal.tex
+	pdflatex -shell-escape proposal.tex
 
 remove-pdf:
 	$(RM) proposal.pdf
