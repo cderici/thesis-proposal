@@ -1,9 +1,47 @@
 \subsection{RPython Framework}
 \label{subsec:rpython}
 
-\begin{itemize}
-\item Here's how RPython and meta-tracing works.
+Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works.
 
-\item Here's how they trace the loops in user programs through the
-interpreter using hints.  
-\end{itemize}
+  \begin{wrapfigure}{r}{0.35\textwidth}
+    %\vspace{-0.5cm}
+    \centering
+    \begin{minipage}[t]{0.32\textwidth}
+    \begin{minted}[numbersep=0pt,gobble=0,linenos,fontsize=\scriptsize,frame=lines]{python}
+  # examine outer impersonator
+  guard_class(p0, StructImpersonator)
+  p1 = getfield(p0, descr="handler")
+  p2 = getfield(p0, descr="hidden_class")
+  guard_value(p1, ConstPtr(ptr18))
+  guard_value(p2, ConstPtr(ptr16))
+  p3 = getfield(p0, descr="inner")
+  # examine middle impersonator
+  guard_class(p3, StructImpersonator)
+  p4 = getfield(p3, descr="handler")
+  p5 = getfield(p3, descr="hidden_class")
+  guard_value(p4, ConstPtr(ptr28))
+  guard_value(p5, ConstPtr(ptr26))
+  p6 = getfield(p3, descr="inner")
+  # examine inner impersonator
+  guard_class(p6, StructImpersonator)
+  p7 = getfield(p6, descr="handler")
+  p8 = getfield(p6, descr="hidden_class")
+  guard_value(p7, ConstPtr(ptr38))
+  guard_value(p8, ConstPtr(ptr36))
+  p9 = getfield(p6, descr="inner")
+  # check the underlying procedure
+  guard_value(p9, ConstPtr(ptr41))
+  # execute the underlying procedure's body
+  i11 = int_add_ovf(i10, 3)
+  guard_no_overflow()
+    \end{minted}
+    \end{minipage}
+    \caption{\small Example trace \racketcode{(f 0)}.}
+    \label{fig:trace}
+  \end{wrapfigure}
+
+Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works.
+
+Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works.
+
+Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works.
