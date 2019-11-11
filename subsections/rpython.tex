@@ -1,44 +1,94 @@
-\subsection{RPython Framework}
+\subsection{Tracing JITs \& RPython Framework}
 \label{subsec:rpython}
 
-Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works.
+JIT compilers allow programs to be compiled dynamically at run-time
+during the evaluation via an interpreter. As opposed to the
+ahead-of-time (AOT) compilers, JITs interleave the compilation with
+execution, aiming to compile and optimize only the parts of the
+program that are used the most. JIT compilers employ a low-overhead
+profiling to dynamically detect a frequent (i.e. hot) sequence of
+instructions during interpretation. Starting with evaluating a given
+program with an interpreter, a JIT compiler stops the evaluation when
+a frequently evaluated instruction path is detected, compiles the
+instructions and starts using the compiled path whenever the same path
+needs to be evaluated again. [CITE?]
 
-  \begin{wrapfigure}{r}{0.35\textwidth}
-    %\vspace{-0.5cm}
+  \begin{wrapfigure}[21]{r}{0.35\textwidth}
+    \vspace{-0.5cm}
     \centering
     \begin{minipage}[t]{0.32\textwidth}
-    \begin{minted}[numbersep=0pt,gobble=0,linenos,fontsize=\scriptsize,frame=lines]{python}
-  # examine outer impersonator
-  guard_class(p0, StructImpersonator)
-  p1 = getfield(p0, descr="handler")
-  p2 = getfield(p0, descr="hidden_class")
-  guard_value(p1, ConstPtr(ptr18))
-  guard_value(p2, ConstPtr(ptr16))
-  p3 = getfield(p0, descr="inner")
-  # examine middle impersonator
-  guard_class(p3, StructImpersonator)
-  p4 = getfield(p3, descr="handler")
-  p5 = getfield(p3, descr="hidden_class")
-  guard_value(p4, ConstPtr(ptr28))
-  guard_value(p5, ConstPtr(ptr26))
-  p6 = getfield(p3, descr="inner")
-  # examine inner impersonator
-  guard_class(p6, StructImpersonator)
-  p7 = getfield(p6, descr="handler")
-  p8 = getfield(p6, descr="hidden_class")
-  guard_value(p7, ConstPtr(ptr38))
-  guard_value(p8, ConstPtr(ptr36))
-  p9 = getfield(p6, descr="inner")
-  # check the underlying procedure
-  guard_value(p9, ConstPtr(ptr41))
-  # execute the underlying procedure's body
-  i11 = int_add_ovf(i10, 3)
-  guard_no_overflow()
+      \begin{minted}[numbersep=0pt,gobble=0,linenos,numbers=right,fontsize=\scriptsize,frame=lines]{python}
+# start of the trace (outer loop)
+label(p0, p1, descr="64723312")
+guard_not_invalidated()
+guard_class(p0, ConsEnv)
+p3 = getfield_gc_r(p0, descr="ConsEnv.prev")
+guard_class(p3, ConsEnv)
+i5 = getfield_gc_i(p3, descr="Fixnum")
+i6 = getfield_gc_i(p0, descr="Fixnum")
+i7 = int_add_ovf(i5, i6)
+guard_no_overflow()
+guard_class(p1, LetCont)
+p9 = getfield_gc_r(p1, descr="LetCont.ast")
+guard_value(p9, ConstPtr(ptr10))
+p11 = getfield_gc_r(p1, descr="LetCont.env")
+p12 = getfield_gc_r(p1, descr="LetCont.prev")
+# inner loop
+label(p11, i7, p12, descr="64723392")
+guard_not_invalidated()
+guard_class(p11, ConsEnv)
+i14 = getfield_gc_i(p11, descr="Fixnum")
+i15 = int_add_ovf(i14, i7)
+guard_no_overflow()
+guard_class(p12, LetCont)
+p17 = getfield_gc_r(p12, descr="LetCont.ast")
+guard_value(p17, ConstPtr(ptr18))
+p19 = getfield_gc_r(p12, descr="LetCont.env")
+p20 = getfield_gc_r(p12, descr="LetCont.prev")
+# jump
+jump(p19, i15, p20, descr="64723392")
+
     \end{minted}
     \end{minipage}
-    \caption{\small Example trace \racketcode{(f 0)}.}
+    \caption{\small Example trace}
     \label{fig:trace}
   \end{wrapfigure}
+
+JITs have been shown to be significantly effective in VM
+implementations for dynamic languages [CITE]. There are two main
+approaches in JIT compilation. Method-based compilation work on the
+method level, and compile the most frequently used methods in the
+program [CITE], while trace-based JIT compilers compile the most
+frequently evaluated loops [CITE]. In this thesis, we're interested in
+the trace-based JIT compilation, as we work with meta-tracing,
+
+Trace-based JIT compilation works on two principal assumptions:
+
+\textbf{i)} Programs spend most of their running time in loops.
+
+\textbf{ii)} Several iterations of the same loop are likely to take
+similar code paths.
+
+To exploit these assumptions, a tracing JIT classifies certain
+execution paths to be \emph{hot loops} during the evaluation. When a
+hot loop is detected, as described before the evaluation stops, and
+loop is compiled and optimized into a \emph{trace}, and then the
+execution continues, using the compiled trace whenever the same path
+needs to be executed. A trace is a linear sequence of instructions
+with an entry point and one or more exit points. \figref{fig:trace}
+shows a simplified example of a typical trace, taking two arguments
+$p0$ and $p1$ as inputs, having a preamble (because of unrolling) and
+an inner loop that jumps to itself. The \emph{guards} within a trace
+make up the trace's exit points, where the trace jumps out if certain
+conditions are not satisfied. They are often used for \textbf{i)}
+making sure in the preamble the conditions are the same when this
+sequence is first traced, and \textbf{ii)} to finish and exit the
+loop.
+
+Meta-tracing.
+
+RPython framework
+
 
 Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works.
 
