@@ -85,7 +85,74 @@ making sure in the preamble the conditions are the same when this
 sequence is first traced, and \textbf{ii)} to finish and exit the
 loop.
 
-Meta-tracing.
+  \begin{wrapfigure}[21]{r}{0.35\textwidth}
+    \vspace{-0.5cm}
+    \centering
+    \begin{minipage}[t]{0.32\textwidth}
+      \begin{minted}[numbersep=0pt,gobble=0,linenos,numbers=right,fontsize=\scriptsize,frame=lines]{python}
+driver = JitDriver(greens = ['pc', 'bytecode'],
+                   reds   = ['a', 'regs'])
+
+def interpret(bcode, a):
+  regs = [0] * 256
+  pc = 0
+
+  while True:
+    driver.jit_merge_point(bcode=bytecode,
+                          pc=pc,a=a,
+                          regs=regs)
+    opcode = ord(bytecode[pc])
+    pc += 1
+
+    if opcode == JUMP_IF_A:
+      target = ord(bcode[pc])
+      pc += 1
+      if a:
+        if target < pc:
+          driver.can_enter_jit(bytecode=bcode,
+                              pc=target,
+                              a=a, regs=regs)
+        pc = target
+    elif opcode == MOV_A_R:
+      ...
+    \end{minted}
+    \end{minipage}
+    \caption{\small An interpreter annotated with hints \cite{bolz09}}
+    \label{fig:rpython-interp}
+  \end{wrapfigure}
+
+\paragraph{Meta-tracing}
+Just like evaluating a regular program, evaluating for example a
+byte-code interpreter for a language on a tracing JIT naturally forms
+an implementation of the language. However, the loops that are traced
+during the execuion of the interpreter not necessarily correspond to
+the loops implemented in the user program that is being
+interpreted. In particular, since a byte-code interpreter is basically
+a dispatch loop for the byte-code instructions in the language, a
+trace of an execution path within such an interpretation loop consists
+of instructions implementing only one particular byte-code. However,
+it is rarely the case where a single byte-code is repeatedly executed
+when evaluating a program on an interpreter. Additionally the loops in
+the user program, in which most of the running time will be spent are
+never being traced. Therefore this approach leads to compiling traces
+that most likely will be used only once at a time (exit out at the end
+of the trace, as the next byte-code will not be the same),
+resulting in a worse performance than even just interpreting.
+
+Meta-tracing introduces certain hints and annotations for the tracer
+to be utilized within the executed program (in our case the
+interpreter) to capture the useful traces that will be executed
+repeatedly, e.g. in the case of an interpreter the ones that will
+correspond to the loops in the user program. The loop detection is
+simply finding a spot where the program jumped
+backwards. \figref{fig:rpython-interp} shows an example interpreter
+decorated with such annotations and hints. The annotations allow the
+implementer to set the parameters (\emph{greens}) that constitute what
+can be considered as a compund program counter (pc), by which the
+tracer will detect that the program jumped backwards. Additionally the
+hints allow the points where the program might jump backwards to be
+stated.  The reader is referred to \cite{bolz09} for a detailed
+discussion.
 
 RPython framework
 
