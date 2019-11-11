@@ -1,18 +1,21 @@
 \subsubsection{Operational Semantics of Linklets}
 
-This section provides a formalism and examples to describe and
-demonstrate the operational semantics of linklets. Figure
-\ref{fig:linklet-source} shows the grammar of the linklet language,
-which is a minimal subset of the Fully Expanded Racket Programs
-extended with the \verb|linklet| form and toplevel definitions. Figure
-\ref{fig:racket-source} presents the grammar for the Racket part of
-the language, which is used within the linklet body. In the remainder
-of this document we will call this sub-language Racket Core (RC). RC
-is basically a $\lambda$-calculus with a handful of syntactic extensions, as
-well as some additional forms to manipulate linklet variables
-(e.g. \emph{var-ref}).
+Linklets are lambda-like forms that consume and produce potentially
+mutable variables (instead of values). They act as units of
+compilation in Racket run-time, where for a given Racket module the
+expander produces a bundle of linklets that will be consumed by the
+run-time compiler.
 
-\twocolumn
+We provide a formalism and examples to describe and demonstrate the
+operational semantics of linklets. Figure \ref{fig:linklet-source}
+shows the grammar of the linklet language, which is a minimal subset
+of the Fully Expanded Racket Programs extended with the \verb|linklet|
+form and toplevel definitions. Figure \ref{fig:racket-source} presents
+the grammar for the Racket part of the language, which is used within
+the linklet body. In the remainder of this document we will call this
+sub-language Racket Core (RC). RC is basically a $\lambda$-calculus with a
+handful of syntactic extensions, as well as some additional forms to
+manipulate linklet variables (e.g. \emph{var-ref}).
 
 A linklet consists of a set of variable definitions and expressions,
 an exported subset of the defined variable names, a set of variables
@@ -23,7 +26,9 @@ use. To run a linklet, it is instantiated as a \emph{linklet
 instances for its imports, and it extracts a specified set of
 variables that are exported from each of the given instances. The
 newly created linklet instance provides its exported variables for use
-by other linklets. Moreover, instead of freshly creating an instance,
+by other linklets.
+
+ Moreover, instead of freshly creating an instance,
 an instantiation may be provided with an additional linklet instance
 as an input, namely the target instance. In this case, the target
 instance is used and modified for the linklet definitions and
@@ -31,6 +36,8 @@ expressions during the evaluation of the body expressions, and the
 result is the value of the last expression in the linklet. In the
 remainder of this document we will use the names ``targeted
 instantiation'' and ``regular instantiation'' for these two modes.
+
+\twocolumn
 
 The minimal API to implement the linklets consists of the functions
 \textbf{i)} \verb|compile-linklet| for preparing a linklet for
