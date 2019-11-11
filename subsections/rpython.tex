@@ -86,7 +86,7 @@ sequence is first traced, and \textbf{ii)} to finish and exit the
 loop.
 
   \begin{wrapfigure}[20]{r}{0.35\textwidth}
-    \vspace{-0.5cm}
+    %\vspace{-0.5cm}
     \centering
     \begin{minipage}[t]{0.32\textwidth}
       \begin{minted}[numbersep=0pt,gobble=0,linenos,numbers=right,fontsize=\scriptsize,frame=lines]{python}
@@ -122,9 +122,9 @@ def interpret(bcode, a):
   \end{wrapfigure}
 
 \paragraph{Meta-tracing}
-Just like evaluating a regular program, evaluating for example a
-byte-code interpreter for a language on a tracing JIT naturally forms
-an implementation of the language. However, the loops that are traced
+Evaluating a byte-code interpreter for a language in place of a
+regular program on a tracing JIT naturally forms an implementation of
+a language. However, without any treatment the loops that are traced
 during the execuion of the interpreter not necessarily correspond to
 the loops implemented in the user program that is being
 interpreted. In particular, since a byte-code interpreter is basically
@@ -136,8 +136,8 @@ when evaluating a program on an interpreter. Additionally the loops in
 the user program, in which most of the running time will be spent are
 never being traced. Therefore this approach leads to compiling traces
 that most likely will be used only once at a time (exit out at the end
-of the trace, as the next byte-code will not be the same),
-resulting in a worse performance than even just interpreting.
+of the trace, as the next byte-code will not be the same), resulting
+in a worse performance than even just interpreting.
 
 Meta-tracing introduces certain hints and annotations for the tracer
 to be utilized within the executed program (in our case the
