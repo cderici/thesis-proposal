@@ -14,7 +14,7 @@ in the performance improvements, especially for programs that has
 frequent changes in the control flow. In 2011, Mozilla reported having
 this problem in their TraceMonkey JIT where they observed a massive
 speed-up in performance for the parts of the programs that has
-tight\footnote{having only one entry and one exit point} loops, while
+tight\footnote{having only a single exit/loop point} loops, while
 suffering substantially in performance for other parts, stating ``You
 lose more when slow than you gain when fast'' \cite{mozblog}.
 
