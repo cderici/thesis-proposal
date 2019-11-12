@@ -1,7 +1,9 @@
 \twocolumn
 
+\subsubsection{Operational Semantics of Linklets}
+
 %\begin{wrapfigure}[11]{r}{0.5\textwidth}
-\vspace{-0.5cm}
+%\vspace{-0.5cm}
 \begin{figure}[tbp]
   \begin{mdframed}
     \begin{align*}
@@ -15,9 +17,6 @@
   \end{mdframed}
 \end{figure}
 %\end{wrapfigure}
-
-
-\subsubsection{Operational Semantics of Linklets}
 
 Linklets are lambda-like forms that consume and produce potentially
 mutable variables (instead of values). They act as units of
@@ -67,7 +66,8 @@ a compiled linklet.
       \; &|\; (\textbf{begin}\; e\; e\; \ldots)\; |\; (\textbf{lambda}\; (x_{\_!\_}\; \ldots)\; e)\\
       \; &|\; (\textbf{set!}\; x\; e)\; |\; (\textbf{raises}\; e)\\
       \; &|\; (\textbf{var\dash ref}\; x)\; |\; (\textbf{var\dash ref/no\dash check}\; x) \\
-      \; &|\; (\textbf{var\dash set!}\; x\; e)\; |\; (\textbf{var\dash set/check\dash undef!}\; x\; e) \\
+      \; &|\; (\textbf{var\dash set!}\; x\; e)  \\
+      \; &|\; (\textbf{var\dash set/check\dash undef!}\; x\; e) \\
       v   &::=\; n\; |\; b\; |\; c\; |\; (void)\;|\; uninit \\ %;; values
       c   &::=\; (closure\; (x\; \ldots)\; e\; \rho) \\
       n   &::=\; number \\
@@ -183,9 +183,7 @@ with the reduction relation for RC, $\beta_r$, that is shown in Figure
 linklet instantiation is defined together by the same relation ($\beta_p$)
 so that the whole evaluation is defined as a relexive-transitive
 closure of the same relation, generating a single small-step sequence
-of reductions from programs to values. The next subsections present
-the compilation and instantiation of linklets, as well as two example
-reductions for each instantiation modes (i.e. regular and targeted).
+of reductions from programs to values.
 
 %\begin{wrapfigure}{r}{0.5\textwidth}
 \begin{figure}[h]
@@ -212,6 +210,27 @@ reductions for each instantiation modes (i.e. regular and targeted).
 \end{figure}
 %\end{wrapfigure}
 
+\begin{figure}[h]
+  \begin{mdframed}
+\begin{verbatim}
+(compile-linklet
+  (linklet ((a)) (x)
+    (define-values (x) 5)
+    (set! x 6)
+    (+ x a)))
+
+(Lα (((Import a1 a a))) ((Export x1 x x))
+  (define-values (x) 5)
+  (var-set! x1 x)
+  (var-set/check-undef! x1 6)
+  (+ (var-ref x1) (var-ref/no-check a1)))
+\end{verbatim}
+\caption{An example linklet compilation}
+\label{fig:compile-example}
+\end{mdframed}
+\end{figure}
+
+
 Given a set of \textit{Import}s ($\mathit{C_I}$) and a set of
 \textit{Export}s ($\mathit{C_E}$), a set of toplevel defined
 identifiers ($\mathit{X_T}$) and a set of mutated identifiers
@@ -237,26 +256,6 @@ depending on the type of expression:
   \item For any other expression e, recurse if e has subforms, return
     otherwise.
 \end{itemize}
-
-\begin{figure}[h]
-  \begin{mdframed}
-\begin{verbatim}
-(compile-linklet
-  (linklet ((a)) (x)
-    (define-values (x) 5)
-    (set! x 6)
-    (+ x a)))
-
-(Lα (((Import a1 a a))) ((Export x1 x x))
-  (define-values (x) 5)
-  (var-set! x1 x)
-  (var-set/check-undef! x1 6)
-  (+ (var-ref x1) (var-ref/no-check a1)))
-\end{verbatim}
-\caption{An example linklet compilation}
-\label{fig:compile-example}
-\end{mdframed}
-\end{figure}
 
 \onecolumn
 
