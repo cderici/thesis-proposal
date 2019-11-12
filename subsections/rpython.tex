@@ -172,8 +172,29 @@ features of Python and commonly listed as \cite{rpython07,rpython09}:
 \end{itemize}
 
 The RPython framework takes RPython code and converts it to a chosen
-lower-level language, most commonly C.
-
-Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works.
-
-Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works. Here's how RPython and meta-tracing works.
+lower-level language, most commonly C. Given a VM (interpreter)
+written in RPython, the toolchain translates it to the target language
+by lowering it in numerous phases, where each phase has its own type
+system and a generic type inference engine. Because the RPython is a
+subset of Python, the entire process can use a Python run-time. The
+general translation process can be described as follows. It starts
+with loading the program into the run-time and get the function
+objects in memory as inputs. Using these function objects, the
+framework generates by abstract intepretation the control flow graphs
+for these functions that will be processed at each further
+transformation step. Then the annotator acts as a high-level type
+inference engine and assigns ``annotations'' to each variable at each
+flow graph. These annotations basically denotes the possible Python
+objects a variable might contain at the run-time. After the whole
+program is annotated, RTyper (RPython typer) takes control and starts
+lowering the annotations and some operations into the lower types and
+operations that would make sense to the targeted environment
+(e.g. structs, pointers, arrays in case of C), acting as a bridge
+between the high-level annotator and the low-level code
+generation. After RTyping, some optional backend optimizations are
+applied, such as inlining, malloc removal and escape analysis. Note
+that like Python, RPython is garbage collected, however, C is
+not. Therefore at this point a garbage collector is inserted into the
+program as well. Finally the typed and lowered flow-graphs are
+inputted into the code generation and the binary is
+generated. \cite{rpython07, pypy06, pypy08}
