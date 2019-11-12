@@ -1,3 +1,22 @@
+\twocolumn
+
+%\begin{wrapfigure}[11]{r}{0.5\textwidth}
+\vspace{-0.5cm}
+\begin{figure}[tbp]
+  \begin{mdframed}
+    \begin{align*}
+      L  &::= (\textbf{linklet}\:((imp\: \ldots)\: \ldots)\:(exp\: \ldots)\:l\dash top\:\ldots\:e)\\
+      l\dash top &::= (\textbf{define\dash values}\:(x)\:e)\:|\:e \\
+      imp &::= x\:|\:(x x) \tag*{[external internal]}\\
+      exp &::= x\:|\:(x x) \tag*{[internal external]}
+    \end{align*}
+  \caption{Linklet Source Language}
+  \label{fig:linklet-source}
+  \end{mdframed}
+\end{figure}
+%\end{wrapfigure}
+
+
 \subsubsection{Operational Semantics of Linklets}
 
 Linklets are lambda-like forms that consume and produce potentially
@@ -22,13 +41,11 @@ an exported subset of the defined variable names, a set of variables
 to export from the linklet despite having no corresponding definition,
 and a set of imports that provide other variables for the linklet to
 use. To run a linklet, it is instantiated as a \emph{linklet
-  instance}. When a linklet is instantiated, it receives other linklet
+instance}. When a linklet is instantiated, it receives other linklet
 instances for its imports, and it extracts a specified set of
 variables that are exported from each of the given instances. The
 newly created linklet instance provides its exported variables for use
-by other linklets.
-
- Moreover, instead of freshly creating an instance,
+by other linklets. Moreover, instead of freshly creating an instance,
 an instantiation may be provided with an additional linklet instance
 as an input, namely the target instance. In this case, the target
 instance is used and modified for the linklet definitions and
@@ -37,59 +54,10 @@ result is the value of the last expression in the linklet. In the
 remainder of this document we will use the names ``targeted
 instantiation'' and ``regular instantiation'' for these two modes.
 
-\twocolumn
-
 The minimal API to implement the linklets consists of the functions
 \textbf{i)} \verb|compile-linklet| for preparing a linklet for
 instantiation and \textbf{ii)} \verb|instantiate-linklet| for running
 a compiled linklet.
-
-Figure \ref{fig:linklet-runtime} shows the grammar of the run\dash
-time language for linklets, i.e. expressions that represent the
-run\dash time objects used in the instantiation of linklets. Given a
-linklet L, \verb|compile-linklet| produces a linklet object $\la$ that
-is ready to be instantiated. $\la$ consists of \textit{Import} and
-\textit{Export} objects for the identifiers denoting the imported and
-exported variables, and the body expressions with potentially some
-additional expressions for variable manipulations in the run\dash
-time. Each \textit{Import} and \textit{Export} object consists of two
-identifiers that are internal and external with respect to the linklet
-body (a variable may be imported/exported with different names), and
-one fresh identifier for internal use during the instantiation.
-
-After compiling, before an actual instantiation of a linklet object
-begins, the \textit{Import} and \textit{Export} objects are
-processed. As we detail below, references for the imported variables
-are collected from the given import instances, and additional
-variables may be created for exported variables. $\lb$ denotes a
-compiled linklet object after such a preparation step, with which the
-actual instantition may begin. Note that $\lb$ contains only a
-reference (to a linklet instance that is used during the
-instantiation) and the body expressions, and doesn't contain the
-import and export objects, as the instantiation uses the variables
-that are already prepared for them. Finally a \textbf{linklet\dash
-  instance} is a finite mapping from identifiers to variables
-(i.e. cells in the heap).
-
-%\begin{wrapfigure}{r}{0.5\textwidth}
-\begin{figure}[tbp]
-  \begin{mdframed}
-    \begin{align*}
-      L  &::= (\textbf{linklet}\:((imp\: \ldots)\: \ldots)\:(exp\: \ldots)\:l\dash top\:\ldots\:e)\\
-      l\dash top &::= (\textbf{define\dash values}\:(x)\:e)\:|\:e \\
-      imp &::= x\:|\:(x x) \tag*{[external internal]}\\
-      exp &::= x\:|\:(x x) \tag*{[internal external]}
-    \end{align*}
-  \caption{Linklet Source Language}
-  \label{fig:linklet-source}
-  \end{mdframed}
-\end{figure}
-%\end{wrapfigure}
-
-Before a linklet is ready for instantiation, several passes over the
-linklet are performed to ensure a correct information flow between the
-variables in the run\dash time. Figure \ref{fig:compile} shows the
-entire compilation procedure.
 
 %\begin{wrapfigure}{r}{0.5\textwidth}
 \begin{figure}[h]
@@ -120,15 +88,6 @@ entire compilation procedure.
 \end{figure}
 %\end{wrapfigure}
 
-For each import and export identifier (and possibly their
-corresponding renamings), \textit{Import} and \textit{Export} objects
-are created with the fresh references that will be used to name the
-variables that are dynamically created during the
-instantiation. Additionally, a pass on the linklet body collects all
-the identifiers that are defined within the linklet body (via
-\verb|define-values|) and all the mutated identifiers (i.e. targets of
-\verb|set!| expressions).
-
 %\begin{wrapfigure}{r}{0.5\textwidth}
 \begin{figure}[h!]
   \begin{mdframed}
@@ -148,6 +107,47 @@ the identifiers that are defined within the linklet body (via
   \end{mdframed}
 \end{figure}
 %\end{wrapfigure}
+
+Figure \ref{fig:linklet-runtime} shows the grammar of the run\dash
+time language for linklets, i.e. expressions that represent the
+run\dash time objects used in the instantiation of linklets. Given a
+linklet L, \verb|compile-linklet| produces a linklet object $\la$ that
+is ready to be instantiated. $\la$ consists of \textit{Import} and
+\textit{Export} objects for the identifiers denoting the imported and
+exported variables, and the body expressions with potentially some
+additional expressions for variable manipulations in the run\dash
+time. Each \textit{Import} and \textit{Export} object consists of two
+identifiers that are internal and external with respect to the linklet
+body (a variable may be imported/exported with different names), and
+one fresh identifier for internal use during the instantiation.
+
+After compiling, before an actual instantiation of a linklet object
+begins, the \textit{Import} and \textit{Export} objects are
+processed. As we detail below, references for the imported variables
+are collected from the given import instances, and additional
+variables may be created for exported variables. $\lb$ denotes a
+compiled linklet object after such a preparation step, with which the
+actual instantition may begin. Note that $\lb$ contains only a
+reference (to a linklet instance that is used during the
+instantiation) and the body expressions, and doesn't contain the
+import and export objects, as the instantiation uses the variables
+that are already prepared for them. Finally a \textbf{linklet\dash
+  instance} is a finite mapping from identifiers to variables
+(i.e. cells in the heap).
+
+Before a linklet is ready for instantiation, several passes over the
+linklet are performed to ensure a correct information flow between the
+variables in the run\dash time. Figure \ref{fig:compile} shows the
+entire compilation procedure.
+
+For each import and export identifier (and possibly their
+corresponding renamings), \textit{Import} and \textit{Export} objects
+are created with the fresh references that will be used to name the
+variables that are dynamically created during the
+instantiation. Additionally, a pass on the linklet body collects all
+the identifiers that are defined within the linklet body (via
+\verb|define-values|) and all the mutated identifiers (i.e. targets of
+\verb|set!| expressions).
 
 %\begin{wrapfigure}[14]{l}{0.475\textwidth}
 \begin{figure}[h]
@@ -258,6 +258,8 @@ depending on the type of expression:
 \end{mdframed}
 \end{figure}
 
+\onecolumn
+
 Figure \ref{fig:compile-example} shows an example compilation. The
 `(\textbf{var-set!} x1 x)` expression is added since the defined
 identifier x is exported. The `(\textbf{var-set/check-undef!} x1 6)`
@@ -272,8 +274,6 @@ the linklet objects are in $\la$ form and ready to be instantiated. In
 general, an instantiation consists of preparing the import and export
 variables and then evaluating the expressions in the linklet body,
 much like $\beta$-reducing a lambda application.
-
-\onecolumn
 
 Recall that a linklet instantiation has two modes; \textbf{i)} regular
 instantiation, where a new instance is being created and returned
