@@ -6,9 +6,14 @@ Here's the technical details of the main issues about self-hosting on
 meta-tracing.
 
 \begin{itemize}
-\item GC pressure on the heap (caused by long chain of continuations),
-  talk about the depth of real world Racket programs like read, expand
-  etc.
+\item GC pressure on the heap... minimark GC (current) is three semispace generational GC (uses nursery for the young objects, mark \& sweep for olds)
+  works well when
+  - objects that die young...
+  - most of the collected objs are newly created post the prev gc cycle
+
+
+  the depth of real world Racket programs like
+  read, expand etc doesn't play well with this
 
 \item (main issue) Confused traces because of complex control flow
   (branchy dispatch loops)
