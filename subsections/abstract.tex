@@ -1,6 +1,7 @@
-This thesis presents the challenge of having an efficient
-implementation of a self-hosting functional language on a meta-tracing
-framework and argues that it is achievable.
+This thesis presents solution approaches for some of the fundamental
+performance issues of a self-hosting functional language
+implementation on a meta-tracing framework and argues that a
+competitive performance is achievable.
 
 I will start by discussing how meta-tracing enables rapid prototyping
 efficient dynamic language implementations. To establish the backbone
@@ -10,27 +11,24 @@ user program, rather than in the interpeter evaluating it. I will also
 discuss how meta-tracing is shown to make a fast Racket interpreter,
 namely Pycket.
 
-Next I will study the fundamental challenges of implementing a VM for
-a self-hosting language on a meta-tracing framework, and lay down the
-problems that we will attempt to solve in this thesis. In particular,
-I will provide some preliminary experiments and discussion to reveal
-the key issues fundamental to meta-tracing programs with complex
-control flow paths.
-
-To address the introduced challenges, we will move on to turn Pycket
-into a complete run-time for Racket on RPython. To that end, I will
-first introduce the linklets to study how Racket made its
+Next I will introduce the linklets to study how Racket made its
 implementation more independent from the run-time, thereby achieving a
-greater flexibility to target different virtual machines starting with
-Chez Scheme. I will develop a formal model of linklets to investigate
-how they work, and study how the communication between the front and
-back-end of Racket is established via the linklets.
+greater flexibility to target different virtual machines. I will
+develop a formal model of linklets to investigate how they work, and
+study how the communication between the front and back-end of Racket
+is established via the linklets.
 
 Then I will demonstrate the process of incorporating linklets into the
-Pycket to turn it into a full implementation of Racket. We will
-discuss how the self-hosting of Racket works with bootstrapping
-linklets, and demonstrate how loading and evaluating a Racket module
-will work on Pycket from start to end.
+Pycket to eventually turn it into a full implementation of
+self-hosting Racket. We will discuss how Racket's self-hosting works
+with bootstrapping linklets, and demonstrate how loading and
+evaluating a Racket module works on Pycket from start to end.
+
+Next I will study the performance issues that are fundamental to
+implementing a self-hosting interpreter on a meta-tracing framework. I
+will provide preliminary experiments and discussion to reveal the key
+points of these issues that we have observed during the improvement of
+Pycket.
 
 Finally I will dicuss approaches to addressing the issues we
 introduced earlier and propose solutions with additional experiments
