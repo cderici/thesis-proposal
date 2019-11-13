@@ -1,20 +1,8 @@
 \subsection{Tracing JITs \& RPython Framework}
 \label{subsec:rpython}
 
-JIT compilers allow programs to be compiled dynamically at run-time
-during the evaluation via an interpreter. As opposed to the
-ahead-of-time (AOT) compilers, JITs interleave the compilation with
-execution, aiming to compile and optimize only the parts of the
-program that are used the most. JIT compilers employ a low-overhead
-profiling to dynamically detect a frequent (i.e. hot) sequence of
-instructions during interpretation. Starting with evaluating a given
-program with an interpreter, a JIT compiler stops the evaluation when
-a frequently evaluated instruction path is detected, compiles the
-instructions and starts using the compiled path whenever the same path
-needs to be evaluated again. [CITE?]
-
-  \begin{wrapfigure}[23]{r}{0.35\textwidth}
-    %\vspace{-0.5cm}
+  \begin{wrapfigure}[21]{r}{0.35\textwidth}
+    \vspace{-0.8cm}
     \centering
     \begin{minipage}[t]{0.32\textwidth}
       \begin{minted}[numbersep=0pt,gobble=0,linenos,numbers=right,fontsize=\scriptsize,frame=lines]{python}
@@ -53,6 +41,18 @@ jump(p19, i15, p20, descr="64723392")
     \caption{\small An example trace}
     \label{fig:trace}
   \end{wrapfigure}
+
+JIT compilers allow programs to be compiled dynamically at run-time
+during the evaluation via an interpreter. As opposed to the
+ahead-of-time (AOT) compilers, JITs interleave the compilation with
+execution, aiming to compile and optimize only the parts of the
+program that are used the most. JIT compilers employ a low-overhead
+profiling to dynamically detect a frequent (i.e. hot) sequence of
+instructions during interpretation. Starting with evaluating a given
+program with an interpreter, a JIT compiler stops the evaluation when
+a frequently evaluated instruction path is detected, compiles the
+instructions and starts using the compiled path whenever the same path
+needs to be evaluated again. [CITE?]
 
 JITs have been shown to be significantly effective in implementing
 efficient VMs for dynamic languages [CITE]. There are two main
