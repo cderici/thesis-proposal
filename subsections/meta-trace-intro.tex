@@ -14,14 +14,12 @@ build a JIT compiler into the binary as well. For example, the PyPy, a
 Python interpreter built via the RPython meta-tracing framework has
 been a big success, achieved a speedup by a factor of 6.54 over the
 interpreter (in C), outperforming even the CPython itself
-\cite{bolz09}.
-
-In 2014, Bolz and collaborators discovered that meta-tracing can
-increase the performance of dynamic functional programming languages
-as well \cite{bolz14-racket}, and created Pycket, a high-level
-interpreter for Racket based on the control, environment, and
-continuation (CEK) abstract machine \cite{felleisen87}. Built on the
-RPtyhon framework, Pycket was able to outperform Racket's own VM and
-other highly-optimized Scheme compilers, while also demonstrating a
-significant reduction on the overhead of contracts and gradual typing
-\cite{pycket15,pycket17}.
+\cite{bolz09}. In 2014, Bolz and collaborators discovered that
+meta-tracing can increase the performance of dynamic functional
+programming languages as well \cite{bolz14-racket}, and created
+Pycket, a high-level interpreter for Racket based on the control,
+environment, and continuation (CEK) abstract machine
+\cite{felleisen87}. Built on the RPtyhon framework, Pycket was able to
+outperform Racket's own VM and other highly-optimized Scheme
+compilers, while also demonstrating a significant reduction on the
+overhead of contracts and gradual typing \cite{pycket15,pycket17}.

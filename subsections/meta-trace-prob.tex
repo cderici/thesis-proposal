@@ -5,18 +5,15 @@ With Racket being easier to host in different VMs and already having
 an interpreter for it in Pycket, it is logical to consider
 self-hosting Racket on RPython, thereby turning Pycket into a full
 implementation of Racket. However, self-hosting on a meta-tracing
-framework poses a significant challange in terms of performance.
-
-Tracing JIT VMs are often able to provide significant performance
-boosts in general, however, there are several issues that are
-fundamental to tracing. The most common problem is the inconsistency
-in the performance improvements, especially for programs that has
-frequent changes in the control flow. In 2011, Mozilla reported having
-this problem in their TraceMonkey JIT where they observed a massive
-speed-up in performance for the parts of the programs that has
-tight\footnote{having only a single exit/loop point} loops, while
-suffering substantially in performance for other parts, stating ``You
-lose more when slow than you gain when fast'' \cite{mozblog}.
+framework poses a significant challange in terms of performance. The
+most common problem is the inconsistency in the performance
+improvements, especially for programs that has frequent changes in the
+control flow. In 2011, Mozilla reported having this problem in their
+TraceMonkey JIT where they observed a massive speed-up in performance
+for the parts of the programs that has tight\footnote{having only a
+  single exit/loop point} loops, while suffering substantially in
+performance for other parts, stating ``You lose more when slow than
+you gain when fast'' \cite{mozblog}.
 
 This problem becomes more apparent when meta-tracing is involved,
 because the program that is being traced is another interpreter, which
