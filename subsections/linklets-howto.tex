@@ -367,9 +367,23 @@ the reference to the target instance is returned.
       \; &\;\; \where \rho_1 = \mathit{V}^I(c\dash imps, (LI\; \ldots), \rho) \\
       \;          &\;\; \hspace{0.4cm} (\rho_2, \sigma_1) = \mathit{V}^E(c\dash exps, x_t, \rho_1, \sigma) \\
       (\textbf{program}\; ((x\;L),(x_1\;L_1)\;\ldots)\;p\dash top), \rho, \sigma &\longrightarrow_{\beta p}\; (\textbf{program}\; ((x_1\;L_1)\;\ldots)\;p\dash top[x := \bm{\Phi^C}(L)]), \rho, \sigma \\ \\
-      eval^{\longrightarrow_{\beta p}}(p) &=\; v\; \textbf{if}\; p, (), () \twoheadrightarrow_{\beta p\cup\beta r} \; (\textbf{program}\; ()\;(v\;\_)) \\
+      eval^{\longrightarrow_{\beta p}}(p) &=\; v\; \textbf{if}\; p, (), () \twoheadrightarrow_{\beta p\cup\beta r} \; (\textbf{program}\; ()\;(v\;\_)) \\ \\
+      \mathit{V}^I : c\dash imps \times (LI\;\ldots) \times \rho &\longrightarrow \rho \\
+      \mathit{V}^I((\overline{(\overline{(\textbf{Import}\; x_{id}\;x_{int}\;x_{ext})})_n}), (\overline{LI_n}), \rho) &= \rho\overline{[x_{id}\rightarrow LI_n[x_{ext}]]}\\ \\
+      \mathit{V}^E : c\dash exps \times x \times \rho \times \sigma &\longrightarrow \rho \times \sigma \\
+      \mathit{V}^E((exp\dash obj\;\ldots), x_t, \rho, \sigma) &= \mathit{P}(exp\dash obj, x_t, \sigma[x_t], \rho, \sigma)\;\ldots\\
+      \mathit{P}((\textbf{Export}\;x_{id}\;x_{int}\;x_{ext}), x_t, LI_t, \rho, \sigma) &= \begin{cases*}
+        \rho_1, \sigma & if $\;x_{ext} \in dom(LI_t)$, \where $\rho_1 = \rho[x_{id}\rightarrow LI_t[x_{ext}]]$ \\
+        \rho_1, \sigma_1 & if $\;x_{ext} \notin dom(LI_t)$, \where $\rho_1 = \rho[x_{id}\rightarrow var_{new}]$\\
+        \;        &\; \hspace{2.6cm} $var_{new} \notin \sigma$ \\
+        \;        &\; \hspace{2.6cm} $\sigma_1 = \sigma[var_{new}\rightarrow uninit,$ \\
+          \;        &\; \hspace{3.2cm} $x_t\rightarrow LI_t[x_{ext}\rightarrow var_{new}]]$
+      \end{cases*} \\
     \end{align*}
-    \hfill \footnotesize $\Phi^V : \textbf{instance\dash variable\dash value}\:,\: \Phi^I : \textbf{instantiate\dash linklet},\: \mathit{V}^I : \textbf{get  import variables},\: \mathit{V}^E : \textbf{create variables for exports}$
+    \centering
+    \footnotesize $\Phi^V : \textbf{instance\dash variable\dash value}\:,\: \Phi^I : \textbf{instantiate\dash linklet},\:\Phi^C : \textbf{compile\dash linklet}$
+
+    \footnotesize $\mathit{V}^I : \textbf{get  import variables},\: \mathit{V}^E : \textbf{create variables for exports}$
     \caption{Reduction Relation}
     \label{fig:reduction}
   \end{mdframed}
@@ -380,43 +394,43 @@ the reference to the target instance is returned.
 \newcommand{\prog}[2]{(\textbf{program}\; (\textbf{use\dash linklets}\;#1 )\;#2)}
 \def\transrel {&\twoheadrightarrow_{p}\;}
 
-\begin{figure*}[tbp]
-  \begin{mdframed}
-    \begin{align*}
-      \mathit{V}^I : c\dash imps \times (LI\;\ldots) \times \rho &\longrightarrow \rho \\
-      \mathit{V}^I((\overline{(\overline{(\textbf{Import}\; x_{id}\;x_{int}\;x_{ext})})_n}), (\overline{LI_n}), \rho) &= \rho\overline{[x_{id}\rightarrow LI_n[x_{ext}]]}\\ \\
-      %% \mathit{V}^I : c\dash imps \times (LI\;\ldots) \times \rho &\longrightarrow \rho \\
-      %% \mathit{V}^I((), (), \rho) &= \rho \\
-      %% \mathit{V}^I((()\;(imp\dash obj\; \ldots)\;\ldots), (LI\;LI_r\;\ldots), \rho) &= \mathit{V}^I(((imp\dash obj\; \ldots)\;\ldots), (LI_r\;\ldots), \rho) \\
-      %% \mathit{V}^I((((\textbf{Import}\; x_{id}\;x_{int}\;x_{ext})\;imp\dash obj\;\ldots)\;\ldots), (LI\;LI_r\;\ldots), \rho) &= \mathit{V}^I(((imp\dash obj\;\ldots)\;\ldots), (LI\;LI_r\;\ldots), \rho[x_{id}\rightarrow var]) \\
-      %% \;          &\; \where var = LI(x_{ext}) \\ \\
-      \mathit{V}^E : c\dash exps \times x \times \rho \times \sigma &\longrightarrow \rho \times \sigma \\
-      \mathit{V}^E((exp\dash obj\;\ldots), x_t, \rho, \sigma) &= \mathit{P}(exp\dash obj, x_t, \sigma[x_t], \rho, \sigma)\;\ldots\\
-      \mathit{P}((\textbf{Export}\;x_{id}\;x_{int}\;x_{ext}), x_t, LI_t, \rho, \sigma) &= \begin{cases*}
-        \rho_1, \sigma & if $\;x_{ext} \in dom(LI_t)$, \where $\rho_1 = \rho[x_{id}\rightarrow LI_t[x_{ext}]]$ \\
-        \rho_1, \sigma_1 & if $\;x_{ext} \notin dom(LI_t)$, \where $\rho_1 = \rho[x_{id}\rightarrow var_{new}]$\\
-        \;        &\; \hspace{2.6cm} $var_{new} \notin \sigma$ \\
-        \;        &\; \hspace{2.6cm} $\sigma_1 = \sigma[var_{new}\rightarrow uninit,$ \\
-          \;        &\; \hspace{3.2cm} $x_t\rightarrow LI_t[x_{ext}\rightarrow var_{new}]]$
-      \end{cases*} \\
-      %% \mathit{P}((\textbf{Export}\;x_{id}\;x_{int}\;x_{ext}), x_t, \rho, \sigma) &= \rho_1, \sigma_1\; \where \\
-      %% \;          &\; \rho_1 = \rho[x_{id}\rightarrow A] \\
-      %% \;          &\; A = \begin{cases*}
-      %%   LI_t[x_{ext}] & if $x_{ext} \in LI_t$ \\
-      %%   var_{new}     & o/w
-      %% \end{cases*} \\
-      %% \;          &\; \sigma_1 = \begin{cases*}
-      %%   \sigma & if $x_{ext} \in LI_t$ \\
-      %%   \sigma[var_{new}\rightarrow uninit, x_t\rightarrow LI_t[x_{ext}\rightarrow var_{new}]] & o/w
-      %% \end{cases*} \\
-      %% \;          &\; var_{new} \notin LI_t \cup \sigma \\
-      %% \;          &\; LI_t = \sigma[x_t] \\
-    \end{align*}
-    \hfill \footnotesize $\mathit{V}^I : \textbf{get  import variables},\: \mathit{V}^E : \textbf{create variables for exports}$
-    \caption{Instantiation Utilities}
-    \label{fig:inst-utils}
-  \end{mdframed}
-\end{figure*}
+%% \begin{figure*}[tbp]
+%%   \begin{mdframed}
+%%     \begin{align*}
+%%       \mathit{V}^I : c\dash imps \times (LI\;\ldots) \times \rho &\longrightarrow \rho \\
+%%       \mathit{V}^I((\overline{(\overline{(\textbf{Import}\; x_{id}\;x_{int}\;x_{ext})})_n}), (\overline{LI_n}), \rho) &= \rho\overline{[x_{id}\rightarrow LI_n[x_{ext}]]}\\ \\
+%%       %% \mathit{V}^I : c\dash imps \times (LI\;\ldots) \times \rho &\longrightarrow \rho \\
+%%       %% \mathit{V}^I((), (), \rho) &= \rho \\
+%%       %% \mathit{V}^I((()\;(imp\dash obj\; \ldots)\;\ldots), (LI\;LI_r\;\ldots), \rho) &= \mathit{V}^I(((imp\dash obj\; \ldots)\;\ldots), (LI_r\;\ldots), \rho) \\
+%%       %% \mathit{V}^I((((\textbf{Import}\; x_{id}\;x_{int}\;x_{ext})\;imp\dash obj\;\ldots)\;\ldots), (LI\;LI_r\;\ldots), \rho) &= \mathit{V}^I(((imp\dash obj\;\ldots)\;\ldots), (LI\;LI_r\;\ldots), \rho[x_{id}\rightarrow var]) \\
+%%       %% \;          &\; \where var = LI(x_{ext}) \\ \\
+%%       \mathit{V}^E : c\dash exps \times x \times \rho \times \sigma &\longrightarrow \rho \times \sigma \\
+%%       \mathit{V}^E((exp\dash obj\;\ldots), x_t, \rho, \sigma) &= \mathit{P}(exp\dash obj, x_t, \sigma[x_t], \rho, \sigma)\;\ldots\\
+%%       \mathit{P}((\textbf{Export}\;x_{id}\;x_{int}\;x_{ext}), x_t, LI_t, \rho, \sigma) &= \begin{cases*}
+%%         \rho_1, \sigma & if $\;x_{ext} \in dom(LI_t)$, \where $\rho_1 = \rho[x_{id}\rightarrow LI_t[x_{ext}]]$ \\
+%%         \rho_1, \sigma_1 & if $\;x_{ext} \notin dom(LI_t)$, \where $\rho_1 = \rho[x_{id}\rightarrow var_{new}]$\\
+%%         \;        &\; \hspace{2.6cm} $var_{new} \notin \sigma$ \\
+%%         \;        &\; \hspace{2.6cm} $\sigma_1 = \sigma[var_{new}\rightarrow uninit,$ \\
+%%           \;        &\; \hspace{3.2cm} $x_t\rightarrow LI_t[x_{ext}\rightarrow var_{new}]]$
+%%       \end{cases*} \\
+%%       %% \mathit{P}((\textbf{Export}\;x_{id}\;x_{int}\;x_{ext}), x_t, \rho, \sigma) &= \rho_1, \sigma_1\; \where \\
+%%       %% \;          &\; \rho_1 = \rho[x_{id}\rightarrow A] \\
+%%       %% \;          &\; A = \begin{cases*}
+%%       %%   LI_t[x_{ext}] & if $x_{ext} \in LI_t$ \\
+%%       %%   var_{new}     & o/w
+%%       %% \end{cases*} \\
+%%       %% \;          &\; \sigma_1 = \begin{cases*}
+%%       %%   \sigma & if $x_{ext} \in LI_t$ \\
+%%       %%   \sigma[var_{new}\rightarrow uninit, x_t\rightarrow LI_t[x_{ext}\rightarrow var_{new}]] & o/w
+%%       %% \end{cases*} \\
+%%       %% \;          &\; var_{new} \notin LI_t \cup \sigma \\
+%%       %% \;          &\; LI_t = \sigma[x_t] \\
+%%     \end{align*}
+%%     \hfill \footnotesize $\mathit{V}^I : \textbf{get  import variables},\: \mathit{V}^E : \textbf{create variables for exports}$
+%%     \caption{Instantiation Utilities}
+%%     \label{fig:inst-utils}
+%%   \end{mdframed}
+%% \end{figure*}
 
 
 %% \begin{figure*}[tbp]

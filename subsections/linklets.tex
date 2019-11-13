@@ -1,13 +1,12 @@
 \subsection{Re-targetability through Linklets}
 \label{subsec:linklets}
 
-To address the issues described in the previous section, we move into
-building a full implementation of self-hosting Racket on the RPython
-framework. We will exploit the way that Racket made its implementation
-easier to re-target different VMs via the \emph{linklets}. This
-section explains what linklets are and how they work to evaluate
-Racket modules and implement functionalities such as top-level, all
-outside of the run-time implementation.
+Now we make a step towards building a self-hosting Racket
+implementation on the RPython framework. We will exploit the way that
+Racket made its implementation easier to re-target different VMs via
+the \emph{linklets}. This section explains what linklets are and how
+they work to evaluate Racket modules and implement functionalities
+such as top-level, all outside of the run-time implementation.
 
 \inputsec{linklets-howto}
 
