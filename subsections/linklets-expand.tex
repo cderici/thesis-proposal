@@ -19,7 +19,7 @@ communicate with the underlying run-time.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[scale=0.4]{img/racket-portable}
+  \includegraphics[scale=0.3]{img/racket-portable}
   \caption{Figure used from \cite{racket-on-chez-19}}
   \label{fig:racket-portable}
 \end{figure}
@@ -31,10 +31,29 @@ itself that the run-time can consume. This bundle is called the
 thin API layer for the linklets (the \emph{linklets} layer in
 \figref{fig:racket-portable}) can then consume these bootstrapping
 linklets to load the essential functionalities into its run-time to
-read, expand and evaluate any given Racket code.
+read, expand and evaluate any given Racket code. That API is usually
+accommodated with an adapter layer in the run-time. For example in
+Chez Scheme, the \emph{schemify} layer in the rightmost figure of the
+\figref{fig:racket-portable} converts the produced linklets into Chez
+Scheme lambda forms.
 
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=0.3]{img/racket-expand-example}
+  \caption{Expansion of a Racket source module into a linklet
+    bundle. Figure used from \cite{racket-on-chez-19}}
+  \label{fig:racket-expand-example}
+\end{figure}
 
-show an example where a Racket module is expanded into a linklet
-bundle
+\figref{fig:racket-expand-example} shows an example where a Racket
+module is expanded into a bundle of linklets. As the expander strictly
+separates the expansion and run-time phases, three linklets are
+produced for the given source module; one for the expansion-time
+(compile-time) and one for the run-time and one for the literal syntax
+objects to bridge the two worlds. Linklets can directly refer to the
+primitive functions as well. As we will detail in
+\secref{subsec:pycket}, they assume rougly 1500 primitive functions
+that are implemented in the run-time, such as \emph{vector-ref} and
+\emph{+} as can be seen in \figref{fig:racket-expand-example}.
 
 show an example of the internals of toplevel repl
