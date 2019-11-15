@@ -48,18 +48,58 @@ body, then the linklet is instantiated over the \emph{top-level}
 instance. Recall that a linklet instance is a finite mapping from
 symbols to variables. Initially our target instance is empty.
 
-SOMEHOW SHOW THE LINKLET AND THE INSTANCE BEFORE AND AFTER THE INSTANTIATE
-
-(linklet (omitted) (a k) (define-values (k) (lambda () a)))
-
-compiled
-
-(linklet (omitted) ((a0 a) (k0 k)) (define-values (k) (lambda () (variable-ref (LinkletVar a0)))) (variable-set! (LinkletVar k0) k \#f))
-(target)
-
-instantiate
-
-(target (a a0) (k k0))
+\begin{figure}[h!]
+  \small
+  \begin{subfigure}[b]{0.25\textwidth}
+    \begin{mdframed}
+\begin{verbatim}
+(linklet (...)
+         (a k)
+  (define-values (k)
+    (lambda () a)))
+\end{verbatim}
+    \end{mdframed}
+    \caption{Linklet \\ before instantiate}
+    \label{fig:1}
+  \end{subfigure}
+  %
+  \begin{subfigure}[b]{0.38\textwidth}
+    \begin{mdframed}
+\begin{verbatim}
+(linklet (...)
+         ((a0 a) (k0 k))
+  (define-values (k)
+    (lambda ()
+      (variable-ref (LinkletVar a0))))
+  (variable-set! (LinkletVar k0) k))
+\end{verbatim}
+    \end{mdframed}
+    \caption{Compiled \\ Linklet}
+    \label{fig:2}
+  \end{subfigure} \hfill
+    %
+  \begin{subfigure}[b]{0.15\textwidth}
+    \begin{mdframed}
+      \begin{align*}
+        a_0 &\rightarrow var_a \\
+        k_0 &\rightarrow var_k \\
+      \end{align*}
+    \end{mdframed}
+    \caption{Environment \\ after compile}
+    \label{fig:2}
+  \end{subfigure}
+  %
+  \begin{subfigure}[b]{0.15\textwidth}
+    \begin{mdframed}
+      \begin{align*}
+        a &\rightarrow var_a \\
+        k &\rightarrow var_k \\
+      \end{align*}
+    \end{mdframed}
+    \caption{Target \\ after instantiate}
+    \label{fig:2}
+  \end{subfigure}
+\end{figure}
 
 The most essential point in this example is the handling of the
 undefined identifier "a". When the expander generates a linklet
@@ -76,22 +116,117 @@ after the instantiation.
 
 \paragraph{$>$ (define a 10)}
 
-SOMEHOW SHOW THE LINKLET AND THE INSTANCE BEFORE AND AFTER THE INSTANTIATE
+When this new expression is inserted in the repl, the expander again
+generates a linklet, then compiles and instantiates it over the sam
+\emph{top-level} target instance.
 
-(linklet (omitted) (a) (define-values (a) 10))
+\begin{figure}[h!]
+  \small
+  \begin{subfigure}[b]{0.26\textwidth}
+    \begin{mdframed}
+\begin{verbatim}
+(linklet (...)
+         (a)
+  (define-values (a) 10))
+\end{verbatim}
+    \end{mdframed}
+    \caption{Linklet \\ before instantiate}
+    \label{fig:1}
+  \end{subfigure}
+  %
+  \begin{subfigure}[b]{0.38\textwidth}
+    \begin{mdframed}
+\begin{verbatim}
+(linklet (...)
+         ((a1 a))
+  (define-values (a) 10)
+  (variable-set! (LinkletVar a1) a))
+\end{verbatim}
+    \end{mdframed}
+    \caption{Compiled \\ Linklet}
+    \label{fig:2}
+  \end{subfigure} \hfill
+  \begin{subfigure}[b]{0.15\textwidth}
+    \begin{mdframed}
+      \begin{align*}
+        a_1 &\rightarrow var_a \\
+      \end{align*}
+    \end{mdframed}
+    \caption{Environment \\ after compile}
+    \label{fig:2}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.15\textwidth}
+    \begin{mdframed}
+      \begin{align*}
+        a &\rightarrow var_a \\
+        k &\rightarrow var_k \\
+      \end{align*}
+    \end{mdframed}
+    \caption{Target \\ after instantiate}
+    \label{fig:2}
+  \end{subfigure}
+\end{figure}
 
-compiled
-
-(linklet (omitted) ((a1 a)) (define-values (a) 10) (variable-set! (LinkletVar a1) a #f))
-(target (a a0) (k k0))
+Note that the compile-linklet inserted the \emph{variable-set!}
+expression in the body to set the value of the variable bound by the
+external name "a". This variable exists in two possible ways. When the
+exported variables are processed at the start of the instantiation, if
+the target instance doesn't have a variable mapping for "a", then a
+new variable will be created (as in the previous step) with the
+\emph{uninitialized} value, otherwise if the target does have a
+mapping for "a" (which it does in this case), then target's variable
+will be used during the instantiation, and will be set by
+\emph{variable-set!}.
 
 \paragraph{$>$ (k)}
 
-SOMEHOW SHOW THE LINKLET AND THE INSTANCE BEFORE AND AFTER THE INSTANTIATE
+At this step, we have everything we need to evaluate this expression
+thanks to the \emph{top-level} target instance.
 
-(linklet (k) (k))
-
-compiled
-
-(linklet module ((k1 k)) ((variable-ref (LinkletVar k1))))
-(target (a a0) (k k0))
+\begin{figure}[h!]
+  \small
+  \begin{subfigure}[b]{0.25\textwidth}
+    \begin{mdframed}
+\begin{verbatim}
+(linklet (...)
+         (k)
+  (k))
+\end{verbatim}
+    \end{mdframed}
+    \caption{Linklet \\ before instantiate}
+    \label{fig:1}
+  \end{subfigure}
+  %
+  \begin{subfigure}[b]{0.38\textwidth}
+    \begin{mdframed}
+\begin{verbatim}
+(linklet (...)
+         ((k1 k))
+  ((variable-ref (LinkletVar k1))))
+\end{verbatim}
+    \end{mdframed}
+    \caption{Compiled \\ Linklet}
+    \label{fig:2}
+  \end{subfigure} \hfill
+    %
+  \begin{subfigure}[b]{0.15\textwidth}
+    \begin{mdframed}
+      \begin{align*}
+        k_1 &\rightarrow var_k \\
+      \end{align*}
+    \end{mdframed}
+    \caption{Environment \\ after compile}
+    \label{fig:2}
+  \end{subfigure}
+  %
+  \begin{subfigure}[b]{0.15\textwidth}
+    \begin{mdframed}
+      \begin{align*}
+        a &\rightarrow var_a \\
+        k &\rightarrow var_k \\
+      \end{align*}
+    \end{mdframed}
+    \caption{Target \\ after instantiate}
+    \label{fig:2}
+  \end{subfigure}
+\end{figure}
