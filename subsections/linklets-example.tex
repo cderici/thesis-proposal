@@ -8,6 +8,20 @@ variables. First we will see a general overview of the mechanism, then
 we will state the example in the formalism that's shown in
 \secref{subsec:linklet-semantics} to see the essential details.
 
+\begin{wrapfigure}{r}{0.3\textwidth}
+  \vspace{-0.5cm}
+  \begin{mdframed}
+    \begin{verbatim}
+> (define k (lambda () a))
+> (define a 10)
+> (k)
+10
+\end{verbatim}
+    \caption{Top-level Example}
+    \label{fig:toplevel-interaction}
+  \end{mdframed}
+\end{wrapfigure}
+
 The top-level itself is quite complicated and beyond the scope of our
 study. The example here aims to demonstrate the essential logic behind
 the linklet variables that implement the functionalities like the
@@ -19,23 +33,65 @@ contains a reference to the namespace and all the defined variables,
 acting like a top-level environment. Each expression entered in the
 repl is evaluated by inserting in a linklet that imports the necessary
 bindings for expansion bookkeeping, compiling and instantiating with
-the \emph{top-level} as the target instance.
+the \emph{top-level} as the target instance. For the clarity here we
+simplify the generated linklets and only show the essential parts.
 
-Let's consider the following
-interactions in \figref{fig:toplevel-interaction}.
+As our example, let's consider the interactions in
+\figref{fig:toplevel-interaction}. The key point here is that the
+variable "a" is defined \emph{after} it is used within the function
+"k". Let's see what happens at each step:
 
-\begin{wrapfigure}{r}{0.3\textwidth}
-  \begin{mdframed}
-    \begin{verbatim}
-> (define k (lambda () a))
-> (define a 10)
-> (k)
-10
-\end{verbatim}
-    \caption{Top-level Example}
-    \label{fig:toplevel-interaction}
+\paragraph{$>$ (define k (lambda () a))}
 
-  \end{mdframed}
-\end{wrapfigure}
+As we briefly explained earlier, this expression is put into a linklet
+body, then the linklet is instantiated over the \emph{top-level}
+instance. Recall that a linklet instance is a finite mapping from
+symbols to variables. Initially our target instance is empty.
 
-asdasd
+SOMEHOW SHOW THE LINKLET AND THE INSTANCE BEFORE AND AFTER THE INSTANTIATE
+
+(linklet (omitted) (a k) (define-values (k) (lambda () a)))
+
+compiled
+
+(linklet (omitted) ((a0 a) (k0 k)) (define-values (k) (lambda () (variable-ref (LinkletVar a0)))) (variable-set! (LinkletVar k0) k \#f))
+(target)
+
+instantiate
+
+(target (a a0) (k k0))
+
+The most essential point in this example is the handling of the
+undefined identifier "a". When the expander generates a linklet
+containing an unidentified identifier, it puts the identifier among
+the exported variables of the linklet (despite having no corresponding
+definition for it), allowing it to be handled via the linklet
+variables. During the compilation of the linklet, a new linklet
+variable is created for it with the special value
+\emph{uninitialized}, and when the binding for the identifier is
+needed, it will be dynamically provided through the target,
+essentially forming a low-level dynamic scope. Note that we have the
+variable mappings for both "a" and the "k" within the target instance
+after the instantiation.
+
+\paragraph{$>$ (define a 10)}
+
+SOMEHOW SHOW THE LINKLET AND THE INSTANCE BEFORE AND AFTER THE INSTANTIATE
+
+(linklet (omitted) (a) (define-values (a) 10))
+
+compiled
+
+(linklet (omitted) ((a1 a)) (define-values (a) 10) (variable-set! (LinkletVar a1) a #f))
+(target (a a0) (k k0))
+
+\paragraph{$>$ (k)}
+
+SOMEHOW SHOW THE LINKLET AND THE INSTANCE BEFORE AND AFTER THE INSTANTIATE
+
+(linklet (k) (k))
+
+compiled
+
+(linklet module ((k1 k)) ((variable-ref (LinkletVar k1))))
+(target (a a0) (k k0))
