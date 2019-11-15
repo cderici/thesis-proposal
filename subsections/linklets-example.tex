@@ -1,0 +1,41 @@
+\subsubsection{Extended Example: Top-level REPL via Linklets}
+\label{subsec:toplevel-example}
+
+This section presents an extended example that demonstrates
+\textbf{i)} how linklets are evaluated, and \textbf{ii)} how the
+top-level interaction is implemented through the linklet
+variables. First we will see a general overview of the mechanism, then
+we will state the example in the formalism that's shown in
+\secref{subsec:linklet-semantics} to see the essential details.
+
+The top-level itself is quite complicated and beyond the scope of our
+study. The example here aims to demonstrate the essential logic behind
+the linklet variables that implement the functionalities like the
+top-level repl\footnote{Read-Eval-Print Loop}.
+
+The implementation of the top-level in the expander provides a
+specially handled linklet instance, namely the \emph{top-level} that
+contains a reference to the namespace and all the defined variables,
+acting like a top-level environment. Each expression entered in the
+repl is evaluated by inserting in a linklet that imports the necessary
+bindings for expansion bookkeeping, compiling and instantiating with
+the \emph{top-level} as the target instance.
+
+Let's consider the following
+interactions in \figref{fig:toplevel-interaction}.
+
+\begin{wrapfigure}{r}{0.3\textwidth}
+  \begin{mdframed}
+    \begin{verbatim}
+> (define k (lambda () a))
+> (define a 10)
+> (k)
+10
+\end{verbatim}
+    \caption{Top-level Example}
+    \label{fig:toplevel-interaction}
+
+  \end{mdframed}
+\end{wrapfigure}
+
+asdasd
