@@ -8,8 +8,8 @@ variables. First we will see a general overview of the mechanism, then
 we will state the example in the formalism that's shown in
 \secref{subsec:linklet-semantics} to see the essential details.
 
-\begin{wrapfigure}[8]{r}{0.3\textwidth}
-  \vspace{-0.5cm}
+\begin{wrapfigure}[9]{r}{0.3\textwidth}
+  %\vspace{-0.5cm}
   \begin{mdframed}
     \begin{verbatim}
 > (define k (lambda () a))
@@ -33,8 +33,9 @@ contains a reference to the namespace and all the defined variables,
 acting like a top-level environment. Each expression entered in the
 repl is evaluated by inserting in a linklet that imports the necessary
 bindings for expansion bookkeeping, compiling and instantiating with
-the \emph{top-level} as the target instance. For the clarity here we
-simplify the generated linklets and only show the essential parts.
+the \emph{top-level} as the target instance. For clarity here we only
+show the run-time linklets among the generated bundles and simplify
+the internals to only deal with the essentials.
 
 As our example, let's consider the interactions in
 \figref{fig:toplevel-interaction}. The key point here is that the
