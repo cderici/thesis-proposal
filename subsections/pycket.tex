@@ -55,29 +55,70 @@ loop \cite{pycket15}.
 \label{fig:old-pycket}
 \end{figure}
 
+Exploiting the increased portability in Racket, here we turn the
+Pycket from being a rudimentary compiler to an actual implementation
+of Racket, independent of the Racket executable.
 
-\begin{itemize}
-  \item it was very fast, but relying on Racket binary to read and expand required modules
-\item it used to be limited
-\item we turned it into a full independent implementation using linklets
-\end{itemize}
+First step is building the \emph{linklets} layer by implementing the
+\emph{compile-linklet} and \emph{instantiate-linklet} functions in
+RPython on the interpreter, thereby allowing Pycket to process and
+evaluate linklets. The \emph{compile-linklet} will produce linklet
+objects from given linklet s-expressions, creating variables for the
+imported and exported variables, processing the body as described in
+\secref{subsec:linklet-semantics}. And the \emph{instantiate-linklet}
+will carry out the steps for running a linklet, effectively
+implementing the $\longrightarrow_{\beta p}$ reduction in the \figref{fig:reduction}
+which will be transitively applied by the interpreter loop.
 
+[implementation details?]
 
-optimizations like common subexpression elimination, copy propogation, constant folding etc (cite Loop-aware optimizaitons....)
+After implementing the \emph{compile-linklet} and
+\emph{instantiate-linklet}, the next step is to load the bootstrapping
+linklets into the run-time as described in
+\secref{subsec:racket-portable}. For simplicity, we're only concerned
+with loading the \emph{expander} linklet, as it's the most essential
+one for bootstrapping (also it's the biggest one). Loading the other
+linklets are essentially the same process (modulo the run-time support
+they need).
 
-inlining comes for free from tracing (cite Hotpath VM)
+As we described earlier, we run the expander offline on itself using
+Racket, which generates a single independent linklet (i.e. no
+imports), serialized as an s-expression. Then Pycket runs the
+\emph{compile-linklet} function on this s-expression at the very
+beginning of its run-time to produce the expander as a runnable
+linklet object that exports the aforementioned functionalities such as
+read, expand, eval etc into the run-time. At this point, given a
+Racket module, Pycket is able to dynamically expand it into a fully
+expanded program and run it using the existing CEK interpreter loop.
 
-loop invariant code motion (cite Loop-aware ....)
+Ability to run Racket's own expander allows Pycket to run a wide
+variety of Racket programs, including the programs in languages built
+on top of Racket core, such as \emph{racket/base}, since the expander
+also provides the implementation of the macro-system. These programs,
+including the bootstrapping linklets themselves often require
+additional run-time support such as \emph{correlated} objects (which
+are syntax objects without the lexical-content information),
+Racket-level exception handling and primitive functions. For example,
+in order to have a REPL on Pycket before having Racket's expander in
+the run-time, it had to be implemented in RPython. Having the expander
+in the run-time allows Pycket to read, expand and run the Racket
+program that implements Racket's own REPL without having any
+additional RPython implementation. At the same time, the Racket's REPL
+implementation requires Racket-level exception handling in the
+run-time. The existing Pycket implementation has a rudimentary
+exception handling mechanism via transforming the Racket-level
+exceptions (which are implemented by Racket structs) into the RPython
+exceptions. However, Racket's REPL for example uses the error handling
+at the Racket-level, which requires the run-time to support for
+installing Racket-level handlers via continuation-marks and
+dynamically pass the Racket-level exceptions to the appropriate
+handlers.
 
-malloc-removal (cite Allocation removal ...)
-
-
-- Here's how we can turn Pycket into a full Racket VM using linklets.
-
-- Implementing linklets on CEK
-
-- Bootstrap linklets
-
-- Primitives
-
-- Run-time support, exceptions, cont marks etc
+Moreover, the Racket itself (including the bootstrapping linklets)
+generally relies on a large number ($\sim$1500) of primitives, aroud 900
+of which we already have in the existing Pycket implementation. An
+additional $\sim$200 primitives need to be implemented, along with the
+addition of the run-time liblaray \texttt{\#\%linklet} that will
+contain 32 linklet related functions including the
+\emph{compile-linklet}, \emph{instantiate-linklet} and
+\emph{instance-variable-value}.
