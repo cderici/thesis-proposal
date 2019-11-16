@@ -1,6 +1,7 @@
 \newpage
 
 \subsubsection{Making Racket more Portable with Linklets}
+\label{subsec:racket-portable}
 
 As described in \secref{sec:intro}, part of the effort of targeting a
 new run-time for Racket was making it more portable by separating the
@@ -24,18 +25,28 @@ communicate with the underlying run-time.
   \label{fig:racket-portable}
 \end{figure}
 
-The process starts with running the expander offline over itself as
-input, outputting a bundle of linklets implementing the expander
-itself that the run-time can consume. This bundle is called the
-\emph{bootstrapping linklets}. A hosting compiler that implements a
-thin API layer for the linklets (the \emph{linklets} layer in
-\figref{fig:racket-portable}) can then consume these bootstrapping
-linklets to load the essential functionalities into its run-time to
-read, expand and evaluate any given Racket code. That API is usually
-accommodated with an adapter layer in the run-time. For example in
-Chez Scheme, the \emph{schemify} layer in the rightmost figure of the
-\figref{fig:racket-portable} converts the produced linklets into Chez
-Scheme lambda forms.
+The process starts with running the expander offline over itself and
+outputting a bundle of linklets implementing the expander that the
+run-time can consume. Along with the expander itself, this process
+(i.e. applying the expander) is also used to export several different
+functionalities as independent linklets for the run-time. These
+linklets are called the \emph{bootstrapping linklets}. Currently
+Racket exports four such linklets: \emph{expander}, \emph{io},
+\emph{threads}, \emph{regexp} \footnote{there's also the
+  \emph{schemify} and \emph{known} linklets, but they're specifically
+  for Chez Scheme integration}. Among them, the \emph{expander}
+linklet is the key linklet for making Racket more portable, as it
+provides the implementations of essential functionalities such as the
+module system, macro system, read etc.
+
+A hosting compiler that implements a thin API layer for the linklets
+(the \emph{linklets} layer in \figref{fig:racket-portable}) can then
+consume these bootstrapping linklets to load the essential
+functionalities into its run-time to read, expand and evaluate any
+given Racket code. That API is usually accommodated with an adapter
+layer in the run-time. For example in Chez Scheme, the \emph{schemify}
+layer in the rightmost figure of the \figref{fig:racket-portable}
+converts the produced linklets into Chez Scheme lambda forms.
 
 \begin{figure}[h]
   \centering
@@ -54,4 +65,4 @@ objects to bridge the two worlds. Linklets can directly refer to the
 primitive functions as well. As we will detail in
 \secref{subsec:pycket}, they assume rougly 1500 primitive functions
 that are implemented in the run-time, such as \emph{vector-ref} and
-\emph{+} as can be seen in \figref{fig:racket-expand-example}.
+\emph{+} as in \figref{fig:racket-expand-example}.
