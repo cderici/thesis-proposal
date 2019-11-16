@@ -1,9 +1,38 @@
 \subsection{Performance Issues with Self-Hosting on JIT Compilers}
 \label{subsec:performance}
 
+With many micro-benchmarks and larger experiments, the existing Pycket
+implementation is shown to be significantly performant in evaluating
+Racket code. It benefits from the the existing generic optimizations
+in the RPython framework, including common subexpression elimination,
+copy propogation, constant folding, loop invariant code motion,
+malloc-removal and the inlining that naturally comes for free from
+tracing \cite{loop-aware:12, hotpath:06, malloc-removal:11}, as well
+as from many improvements on the interpreter such as environment
+pruning, data structure specialization, strategies, as well as some
+gradual typing related improvements such the use of hidden-classes
+\cite{pycket15, pycket17}.
 
-Here's the technical details of the main issues about self-hosting on
-meta-tracing.
+Adding the linklets layer to the front-end of the existing
+implementation doesn't have any effect on the benchmark performance,
+since the linklets layer only adds the capability of processing and
+running linklets and doesn't include or change anything in the
+Pycket's back-end. However, having the linklets allows Pycket to run
+the programs that are much larger than micro-benchmarks or individual
+experiment programs. To give a perspective, the offline generated
+expander linklet that is processed in Pycket at boot itself is roughly
+5MB file containing the s-expressions of 2642 functions. Another
+example is, to run a single Racket program written in the
+\emph{racket/base} language (such as repl for instance), more than 100
+Racket modules need to be expanded and instantiated first just to load
+the language before running the program itself.
+
+In addition to the problem of being have to evaluate larger programs,
+self-hosting also reveals an issue that is fundamental to the tracing
+JIT compilers, which is being have to evaluate large dispatch-loops
+that create complex control flows that are significantly hard for
+tracing. In this section we study both of these problems and attempt
+to understand the key parts to address them in the next section.
 
 \begin{itemize}
 \item GC pressure on the heap... minimark GC (current) is three semispace generational GC (uses nursery for the young objects, mark \& sweep for olds)
@@ -19,5 +48,5 @@ meta-tracing.
   (branchy dispatch loops)
 
   branchy code, with experiments, show traces
-  
+
 \end{itemize}
