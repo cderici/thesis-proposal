@@ -71,8 +71,23 @@ since our setup creates many objects (often large) that live long, not
 only we benefit the nursery approach enough but also the
 mark-and-sweep creates a pressure on the run-time performance.
 
-EXAMPLE RUN
+EXAMPLE
 
-\subsubsection{Tracing Loops With Complex Control Flow}
+\subsubsection{Meta-Tracing Complex Control Flows}
 
-branchy
+As discussed in \secref{subsec:rpython}, a trace is generated in a
+meta-tracing framework by accompanying an interpreter while it is
+evaluating a program and detecting hot-loops. During this process, the
+tracer exactly follows all the operations in the interpreter. For
+example, if a function application is being evaluated, the next
+operation to be interpreted will be the first operation in the
+function's body\footnote{This is why inlining comes naturally from
+  tracing.}. While this approach works quite well in generating
+re-usable and concise traces for programs/loops with a straightforward
+control flow thanks to the hints and annotations in meta-tracing
+\cite{bolz09}, it becomes significantly harder when the control flow
+gets more complicated. Consider the following program:
+
+\begin{lstlisting}[mathescape]
+[show branchy code]
+\end{lstlisting}
