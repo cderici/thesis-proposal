@@ -43,22 +43,36 @@ program is linked with a GC that is implemented within the framework
 (in RPython), by inspecting all the graphs and turning all
 \texttt{malloc} operations into calls to the GC. RPython's garbage
 collector, namely the \emph{minimark GC} is a three-generations
-semispace copying generational collector \cite{pypy06, bolz:14,
-  gc:16}.
+semispace copying generational collector. Each semispace has a nursery
+where the young\footnote{The age of an object is the number of
+  collections they survived.}  objects are inserted first,
+i.e. allocations fill the nursery. And when the nursery is full then
+it is collected and the objects that are still alive are moved into
+the non-nursery part of the current semispace. This decreases the
+times that a full collection is needed. The approach is based on the
+idea that the lifetime of the objects that are created are short, and
+the amount of live objects that are used by the program fits in the
+nursery (set to be the size of CPU Level 2 cache). \cite{pypy06,
+  bolz:14, gc:16, gc:12}
 
-\begin{itemize}
-\item GC pressure on the heap... minimark GC (current) is three semispace generational GC (uses nursery for the young objects, mark \& sweep for olds)
-  works well when
-  - objects that die young...
-  - most of the collected objs are newly created post the prev gc cycle
+Now that the Racket's expander is used to expand a given module within
+the Pycket's run-time, the life in the heap is much different than
+what a generational GC would like to see. The allocated objects are
+rather big and live very long. Even the expander itself is allocated
+as a linklet instance containing more than 2000 variables, and live
+until the expansion of the given Racket module as well as its language
+(entailing the expansion of many Racket modules) is completed. Another
+example is the long continuation chains caused by the large depth of
+the real-world Racket programs such as the macro-system or the
+module-system. The \emph{minimark GC} moves the old and/or big objects
+out of the semispace ("external"), where they will not be moved and
+collected in a mark-and-sweep fashion to avoid costly moves. However,
+since our setup creates many objects (often large) that live long, not
+only we benefit the nursery approach enough but also the
+mark-and-sweep creates a pressure on the run-time performance.
 
+EXAMPLE RUN
 
-  the depth of real world Racket programs like
-  read, expand etc doesn't play well with this
+\subsubsection{Tracing Loops With Complex Control Flow}
 
-\item (main issue) Confused traces because of complex control flow
-  (branchy dispatch loops)
-
-  branchy code, with experiments, show traces
-
-\end{itemize}
+branchy
