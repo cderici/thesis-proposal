@@ -86,8 +86,53 @@ function's body\footnote{This is why inlining comes naturally from
 re-usable and concise traces for programs/loops with a straightforward
 control flow thanks to the hints and annotations in meta-tracing
 \cite{bolz09}, it becomes significantly harder when the control flow
-gets more complicated. Consider the following program:
+gets more complicated. Consider the following program being
+meta-traced:
 
+{\small
 \begin{lstlisting}[mathescape]
-[show branchy code]
-\end{lstlisting}
+(define (branchy lst)
+  ((letrec
+     ([loop (lambda (lst)
+              (let ([index (if (null? lst) 3 (car lst))])
+                (if (null? lst) -1
+                    (if (< index 18)
+                        (if (< index 3)
+                            (if (< index 2)
+                                (loop (cdr lst))
+                                (loop (cdr lst)))
+                            (if (< index 5)
+                                (if (< index 4)
+                                    (+ 3 (loop (cdr lst)))
+                                    (+ 5 (loop (cdr lst))))
+                                (if (< index 6)
+                                    (loop (cdr lst))
+                                    (if (< index 7)
+                                        (loop (cdr lst))
+                                        (loop (cdr lst))))))
+                        (if (< index 12)
+                            (if (< index 9)
+                                (loop (cdr lst))
+                                (if (< index 10)
+                                    (+ 9 (loop (cdr lst)))
+                                    (if (< index 11)
+                                        (+ 10 (loop (cdr lst)))
+                                        (loop (cdr lst)))))
+                            (if (< index 14)
+                                (if (< index 13)
+                                    (let ()
+                                         (loop (cdr lst))
+                                         1.3)
+                                    (+ 13 (loop (cdr lst))))))))))]))
+  (loop lst)))
+\end{lstlisting}}
+
+This toy program is a simplification of the \texttt{fasl-\textgreater
+  s-exp} function of the FASL library in Racket, which given a byte
+stream, decodes the stream into an s-expression.
+
+The trace for the loop depends on the input.
+
+Here's the trace we get when run this on this input : .....
+
+Here's the ideal trace we would like to see independent of the input: ....
