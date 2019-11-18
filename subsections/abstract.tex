@@ -19,10 +19,12 @@ study how the communication between the front and back-end of Racket
 is established via the linklets.
 
 Then I will demonstrate the process of incorporating linklets into the
-Pycket to eventually turn it into a full implementation of
+Pycket to eventually turn it into an implementation of the
 self-hosting Racket. We will discuss how Racket's self-hosting works
-with bootstrapping linklets, and demonstrate how loading and
-evaluating a Racket module works on Pycket from start to end.
+with bootstrapping linklets, how loading and evaluating a Racket
+module works on Pycket from start to end, and demonstrate with
+examples how functionalities like top-level repl implemented with
+linklets
 
 Next I will study the performance issues that are fundamental to
 implementing a self-hosting interpreter on a meta-tracing framework. I
@@ -30,7 +32,7 @@ will provide preliminary experiments and discussion to reveal the key
 points of these issues that we have observed during the improvement of
 Pycket.
 
-Finally I will dicuss approaches to addressing the issues we
+Finally I will discuss approaches to addressing the issues we
 introduced earlier and propose solutions with additional experiments
 and formalism, as well as demonstration on the new Pycket, to improve
 the performance enough to justify using meta-tracing to implement VMs
