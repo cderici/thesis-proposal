@@ -1,22 +1,45 @@
 I have already made progress towards my thesis:
 
 \begin{itemize}
-  \item .....
+\item I have created the formalism for describing the operational
+  semantics of linklets.
+\item I have implemented the linklets in RPython and incorporated them into
+  Pycket.
+\item I have implemented all the run-time support and primitives to
+  incorporate the expander into Pycket and be able to implement
+  \texttt{\#racket}.
+\item I have created a formalism for a stackful and a CEK-based
+  interpreter working together.
+\item I have prototyped the two interpreter approach where a stackful
+  interpreter is working along with the existing CEK that is hosting
+  Racket using linklets.
 \end{itemize}
 
 To complete my thesis, I plan to follow this timeline:
 
 \begin{itemize}
-  \item \textbf{[June-July 2018 - Completed]} this one
+  \item \textbf{[December 2019]} Improve the stackful+CEK Pycket.
     \begin{itemize}
-    \item do this
+    \item Improve the stackful interpreter enough to run more complex
+      programs with linklets.
+     \item Investigate and improve the strategies for switching with
+       the CEK.
+     \item Devise and implement experiments to show that it is a
+       viable approach by demonstrating that it helps with the GC
+       issue.
     \end{itemize}
-  \item \textbf{[July-August 2018 - Completed]} that one
+  \item \textbf{[January 2018]} Improve the performance of regexp
+    implementation.
     \begin{itemize}
-      \item do that
+      \item Devise and implement strategies to get the performance of
+        the regexp implementation closer to the existing RPython
+        regexp.
+      \item Plan and execute experiments to demonstrate that it is a
+        viable approach to meta-trace programs with complex control
+        flow.
     \end{itemize}
-  \item \textbf{[January-May 2019]} Write dissertation
-  \item \textbf{[June 2019]} Defend
+  \item \textbf{[February-May 2020]} Write dissertation
+  \item \textbf{[June 2020]} Defend
 \end{itemize}
 
 \subsection{Planned Publications}
