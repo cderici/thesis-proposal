@@ -1,4 +1,82 @@
-\subsubsection{Top-level REPL Example}
+\subsubsection{Top-level REPL via Linklets}
 \label{subsec:toplevel-example}
 
-Here's how top-level repl works with linklets
+Let's take a look at how a VM that implements linklets can easily
+implement functionalities such as the Racket top-level
+repl\footnote{read-eval-print loop} by loading the expander linklet
+into its run-time. Note that the top-level itself is quite complicated
+and beyond the scope of our study. The example here aims to provide a
+general overview of the interaction between the run-time and the
+functionalities provided by the language through the linklets, for
+this exercise in particular the expander linklet. Recall that the
+expander implements functions such as read, expand, eval, and outputs
+a bundle of linklets for a given Racket code.
+
+First let's briefly describe what linklets are and how linklets
+operate. In \secref{subsec:linklets-semantics} I will provide linklets'
+operational semantics with a formalism in more detail.
+
+A linklet consists of a set of variable definitions and expressions,
+an exported subset of the defined variable names, a set of variables
+to export from the linklet despite having no corresponding definition,
+and a set of imports that provide other variables for the linklet to
+use. Some linklet examples can be seen in
+\figref{fig:racket-expand-example}. To run a linklet, it is
+instantiated as a \emph{linklet instance}, which is a collection of
+linklet variables. When a linklet is instantiated, it receives other
+linklet instances for its imports, and it extracts a specified set of
+variables that are exported from each of the given instances. The
+newly created linklet instance provides its exported variables for use
+by other linklets. Moreover, an instantiation may be given an
+additional linklet instance as an input, namely the target
+instance. In this case, the variables in the target instance is used
+and modified for the linklet definitions and expressions during the
+evaluation of the body expressions, and the result is the value of the
+last expression in the linklet (instead of an instance). In the
+remainder of this document we will use the names ``targeted
+instantiation'' and ``regular instantiation'' for these two modes.
+
+The minimal API for a virtual machine to implement the linklets
+consists of the functions \textbf{i)} \verb|compile-linklet| for
+preparing a linklet for instantiation and \textbf{ii)}
+\verb|instantiate-linklet| for running a compiled linklet. In
+particular, the VM uses the \verb|compile-linklet| to take an
+s-expression for a linklet as input and produce a linklet object in a
+representation of its choice, containing the run-time AST for the
+codes inside the linklet. Therefore, loading a linklet into its
+run-time for a VM means that the functions provided by the linklet are
+\emph{callable} during the run-time. For example after loading the
+expander linklet, a VM can \emph{call} the functions from Racket's
+expander such as read, expand, eval to use Racket's module system,
+macro system etc.
+
+\begin{wrapfigure}[9]{r}{0.3\textwidth}
+  \vspace{-0.6cm}
+  \begin{mdframed}
+    \begin{verbatim}
+> (define k (lambda () a))
+> (define a 10)
+> (k)
+10
+\end{verbatim}
+    \caption{Top-level Example}
+    \label{fig:toplevel-interaction}
+  \end{mdframed}
+\end{wrapfigure}
+
+
+As our example, let's consider the interactions in
+\figref{fig:toplevel-interaction}. The key point here is that the
+variable "a" is defined \emph{after} it is used within the function
+"k". To implement this repl, the VM will keep a dedicated linklet
+instance that we will refer to as the \emph{top-level
+  instance}. Recall that a linklet instance is a collection of linklet
+variables. In our study we assume that it is implemented as a finite
+mapping of identifiers to linklet variables. Initially the top-level
+instance will be an empty instance.
+
+The essential 
+
+
+Let's see what happens at each step:
+
