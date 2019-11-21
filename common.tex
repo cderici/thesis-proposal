@@ -9,3 +9,14 @@
 \def\lb {\bm{L_\beta}}
 
 \newcommand\racketcode[1]{{\mintinline[fontsize=\small]{racket}{#1}}}
+
+% reduction stuff
+\newcommand{\redinput}[1]{EP\;\llbracket #1 \rrbracket, \rho, \sigma\;}
+\newcommand{\redoutput}[3]{EP\;\llbracket #1 \rrbracket, #2, #3\;}
+
+\newcommand{\rcinput}[1]{EP\;\llbracket E\;\llbracket #1 \rrbracket \rrbracket, \rho, \sigma\;}
+\newcommand{\rcoutput}[3]{EP\;\llbracket E\;\llbracket #1 \rrbracket \rrbracket, #2, #3\;}
+\def\rcrel {&\longrightarrow_{\beta r}\;}
+
+\def\where {\textbf{where}\;}
+\def\rel {&\longrightarrow_{\beta p}\;}

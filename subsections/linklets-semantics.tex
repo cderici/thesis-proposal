@@ -8,3 +8,408 @@ language, therefore it is executable
 \cite{felleisen2009semantics}. Randomized testing is used to verify
 the model \cite{random-test:2009}, and a parallel test suite is used
 to verify the Pycket implementation and the model with each other.
+
+\begin{wrapfigure}[10]{r}{0.45\textwidth}
+  \vspace{-0.5cm}
+  \footnotesize
+%\begin{figure}[h!]
+  \begin{mdframed}
+    \begin{align*}
+      L  &::= (\textbf{linklet}\:((imp\: \ldots)\: \ldots)\:(exp\: \ldots)\:l\dash top\:\ldots\:e)\\
+      l\dash top &::= (\textbf{define\dash values}\:(x)\:e)\:|\:e \\
+      imp &::= x\:|\:(x x) \tag*{[external internal]}\\
+      exp &::= x\:|\:(x x) \tag*{[internal external]}
+    \end{align*}
+  \caption{Linklet Source Language}
+  \label{fig:linklet-source}
+  \end{mdframed}
+%\end{figure}
+\end{wrapfigure}
+
+Figure \ref{fig:linklet-source} shows the grammar of the linklet
+language, which is a minimal subset of the Fully Expanded Racket
+Programs extended with the \verb|linklet| form and toplevel
+definitions. Figure \ref{fig:racket-source} presents the grammar for
+the Racket part of the language, which is used within the linklet
+body. In the remainder of this document we will call this sub-language
+Racket Core (RC). RC is basically a $\lambda$-calculus with a handful of
+syntactic extensions, as well as some additional forms to manipulate
+linklet variables (e.g. \emph{var-ref}).
+
+\begin{wrapfigure}[24]{r}{0.45\textwidth}
+  \vspace{-0.8cm}
+  \footnotesize
+%\begin{figure}[h]
+  \begin{mdframed}
+    \begin{align*}
+      e &::=\; x\; |\; v\; |\; (e\; e\; \ldots)\; |\; (\textbf{if}\; e\; e\; e)\; |\; (o\; e\; e)\; \\
+      \; &|\; (\textbf{begin}\; e\; e\; \ldots)\; |\; (\textbf{lambda}\; (x_{\_!\_}\; \ldots)\; e)\\
+      \; &|\; (\textbf{set!}\; x\; e)\; |\; (\textbf{raises}\; e)\\
+      \; &|\; (\textbf{var\dash ref}\; x)\; |\; (\textbf{var\dash ref/no\dash check}\; x) \\
+      \; &|\; (\textbf{var\dash set!}\; x\; e)  \\
+      \; &|\; (\textbf{var\dash set/check\dash undef!}\; x\; e) \\
+      v   &::=\; n\; |\; b\; |\; c\; |\; (void)\;|\; uninit \\ %;; values
+      c   &::=\; (closure\; (x\; \ldots)\; e\; \rho) \\
+      n   &::=\; number \\
+      b   &::=\; true\; |\; false \\
+      var &::=\; variable\dash not\dash otherwise\dash mentioned \\ %;; variables
+      x,\; cell &::=\; variable\dash not\dash otherwise\dash mentioned \\ %;; variables
+      o  &::=\; +\; |\; * |\; < \\
+      \rho   &::=\; ((x\; var)\; \ldots) \tag*{[Environment]}\\
+      \sigma   &::=\; ((var\; v)\; \ldots) \tag*{[Store]}\\
+      E   &::=\; []\; |\; (v\; \ldots\; E\; e\; \ldots)\; |\; (o\; E\; e)\; |\; (o\; v\; E) \\
+      \;  &|\; (\textbf{var\dash set!}\; x\; E)\; |\; (\textbf{set!}\; x\; E)\; \\
+      \;  &|\; (\textbf{var\dash set/check\dash undef!}\; x\; E) \\
+      \;  &|\; (\textbf{begin}\; v\; \ldots\; E\; e\; \ldots)\; |\; (\textbf{if}\; E\; e\; e)
+    \end{align*}
+    \caption{Racket Core Language (RC)}
+    \label{fig:racket-source}
+  \end{mdframed}
+%\end{figure}
+\end{wrapfigure}
+
+Figure \ref{fig:linklet-runtime} shows the grammar of the run\dash
+time language for linklets, i.e. expressions that represent the
+run\dash time objects used during an instantiation of linklets. Given a
+linklet L, \emph{compile-linklet} produces a linklet object $\la$ that
+is ready to be instantiated. $\la$ consists of \textit{Import} and
+\textit{Export} objects for the identifiers denoting the imported and
+exported variables, and the body expressions with potentially some
+additional expressions for variable manipulations in the run\dash
+time. Each \textit{Import} and \textit{Export} object consists of two
+identifiers that are internal and external with respect to the linklet
+body (a variable may be imported/exported with different names), and
+one fresh identifier for internal use during the instantiation.
+
+After compiling, before the instantiation of a linklet object begins,
+the \textit{Import} and \textit{Export} objects are processed. As we
+detail below, references for the imported variables are collected from
+the given import instances, and additional variables may be created
+for exported variables. $\lb$ denotes a compiled linklet object after
+such a preparation step, with which the actual instantition may
+begin. Note that $\lb$ contains only a reference (to a linklet
+instance that is used during the instantiation) and the body
+expressions, and doesn't contain the import and export objects, as the
+instantiation uses the variables that are already prepared for
+them. Finally a \textbf{linklet\dash instance} is a finite mapping
+from symbols to variables.
+
+\begin{wrapfigure}[15]{r}{0.45\textwidth}
+  \vspace{-1cm}
+  \footnotesize
+%\begin{figure}[h!]
+  \begin{mdframed}
+    \begin{align*}
+      CL             &::=\; \bm{\Phi^C}(L)\\
+      L\dash obj     &::= (\la\; c\dash imps \; c\dash exps \; l\dash top \ldots)\\
+      \;           &\;|\; (\lb\; x\; l\dash top\; \ldots) \\
+      LI             &::=\; (\textbf{linklet\dash instance}\; (x\; var)\; \ldots) \\
+      c\dash imps    &::=\; ((imp\dash obj\; \ldots)\; \ldots)\\
+      c\dash exps    &::=\; (exp\dash obj\; \ldots)\\
+      imp\dash obj   &::=\; (\textbf{Import}\; x\; x\; x) \tag*{[id int ext]} \\
+      exp\dash obj   &::=\; (\textbf{Export}\; x\; x\; x) \tag*{[id int ext]} \\
+    \end{align*}
+    \hfill \footnotesize $\Phi^C : \textbf{compile\dash linklet}$
+    \caption{Linklet Runtime Language}
+    \label{fig:linklet-runtime}
+  \end{mdframed}
+%\end{figure}
+\end{wrapfigure}
+
+Before a linklet is ready for instantiation, as part of the
+\verb|compile-linklet| process, several passes over the linklet are
+performed to ensure a correct information flow between the variables
+in the run\dash time. For each import and export identifier (and
+possibly their corresponding renamings), \textit{Import} and
+\textit{Export} objects are created with the fresh references that
+will be used to name the variables that are dynamically created during
+the instantiation. Additionally, a pass on the linklet body collects
+all the identifiers that are defined within the linklet body and all
+the mutated identifiers.
+
+Given a set of \textit{Import}s ($\mathit{C_I}$) and a set of
+\textit{Export}s ($\mathit{C_E}$), a set of toplevel defined
+identifiers ($\mathit{X_T}$) and a set of mutated identifiers
+($\mathit{X_M}$), the compilation starts to process each expression in
+the linklet body one by one, performing the following actions
+depending on the type of expression:
+
+\begin{itemize}
+  \footnotesize
+\item For a `(\textbf{define-values} (x) e)` expression where $(\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in \mathit{C_E}$ (i.e. x is exported), add an additional `(\textbf{var-set!} $x_{gen}$ x)` expression.
+\item For a `(\textbf{set!} x e)` expression where $(\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in \mathit{C_E}$ (i.e. x is exported), turn the expression into `(\textbf{var-set/check-undef!} $x_{gen}$ e)`.
+\item For any identifier x where $(\textbf{Import}\; x_{gen}\; x\; x_{ext}) \in \mathit{C_I}$ (i.e. x is imported), turn the identifier into `(\textbf{var-ref/no-check} $x_{gen}$)`.
+\item For any identifier x where $(\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in \mathit{C_E}$ and either $x \in \mathit{X_M}$ or $x \notin \mathit{X_T}$, turn the identifier into `(\textbf{var-ref} $x_{gen}$)`.
+\item For any other expression e, recurse if e has subforms, return otherwise.
+\end{itemize}
+
+\begin{wrapfigure}[22]{r}{0.5\textwidth}
+  \footnotesize
+  \vspace{-0.5cm}
+%\begin{figure}[h]
+  \begin{mdframed}
+    \begin{align*}
+      p           &::=\; (\textbf{program}\; ((x\; L)\; \ldots)\; p\dash top) \\
+      p\dash top  &::=\; v\; |\; (\textbf{let\dash inst}\; x\; p\dash top\;p\dash top) \\
+      \;          &\;|\; (\textbf{seq}\; p\dash top\; \ldots) \\
+      \;          &\;|\; \bm{\Phi^I}(l\dash ref\; x\; \ldots)\; |\; \bm{\Phi^I}(l\dash ref\; x\; \ldots\; \textbf{\#:t}\; x) \\
+      \;          &\;|\; \bm{\Phi^V}(x\; x) \\
+      l\dash ref &::=\; x\; |\; L\dash obj \\
+      v           &::=\; ....\;|\;(v\;x) \\
+      EP          &::=\; [] \\
+      \;          &\;|\; \bm{\Phi^I}((\lb\; x\; v\; \ldots\; EP\; l\dash top\; \ldots)\; x\; \ldots) \\
+      \;          &\;|\; (\textbf{define\dash values}\:(x)\:EP) \\
+      \;          &\;|\; (\textbf{let\dash inst}\; x\; EP\; p\dash top) \\
+      \;          &\;|\; (\textbf{seq}\; v\; \ldots\; EP\; p\dash top\; \ldots) \\
+      \;          &\;|\; (\textbf{program}\; ()\; EP) \\
+    \end{align*}
+    \hfill \footnotesize $\Phi^V : \textbf{instance\dash variable\dash value}\:,\: \Phi^I : \textbf{instantiate\dash linklet}$
+    \caption{Linklet Programs}
+    \label{fig:linklet-program}
+  \end{mdframed}
+%\end{figure}
+\end{wrapfigure}
+
+Since the linklets are lambda\dash like binding forms and not capable
+of starting a computation by themselves, we introduce a top\dash level
+form, namely \verb|program|. A \verb|program| consists of a set of
+given linklets to be loaded and a single top\dash level expression to
+perform a computation. \figref{fig:linklet-program} shows the
+grammar for \verb|program|s. We provided the \verb|let-inst| form to
+name a linklet instance, and \verb|seq| form to perform multiple
+computations in sequence.
+
+As an example, we can represent the top-level repl example from the
+previous section as a linklet \emph{program}, and simulate the
+process. The reductions below demonstrate the compilation of each
+linklet, representing the linklets produced by the expander at each
+repl interaction. After the compilation, the linklets are substitiuted
+in the body and the evaluation starts with reducing the
+body. \figref{fig:reduction} shows the reduction relation, $\beta_p$, that
+implements the evaluation, together with the reduction relation for
+RC, $\beta_r$, that is shown in \figref{fig:rc-reduction}. For clarity,
+the reduction of the programs and the linklet instantiation is defined
+together by the same relation ($\beta_p$) so that the whole evaluation
+generating a single small-step sequence of reductions from programs to
+values.
+
+\begin{table}[h!]
+  \vspace{1cm}
+  \centering
+  %\scriptsize
+  \footnotesize
+  \begin{tabular}{lc|c|c}
+    &\textbf{program} & \textbf{$\rho$} & \textbf{$\sigma$} \\ \hline \hline
+    &\begin{lstlisting}[mathescape]
+(program ([l1 (linklet () (a k) (define-values (k) (lambda () a)) (void))]
+           [l2 (linklet () (a) (define-values (a) 10) (void))]
+           [l3 (linklet () (k) (k))])
+  (let-inst t (make-instance)
+     (seq ($\phi^I$ l1 #:t t) ($\phi^I$ l2 #:t t) ($\phi^I$ l3 #:t t))))
+    \end{lstlisting} & [] & [] \\ \hline
+    $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
+(program ([l2 (linklet () (a) (define-values (a) 10) (void))]
+           [l3 (linklet () (k) (k))])
+  (let-inst t (make-instance)
+     (seq ($\phi^I$ (L$\alpha$ () ((Export a1 a a) (Export k1 k k))
+                   (define-values (k) (lambda () (var-ref a1)))
+                   (var-set! k1 k) (void)) #:t t)
+           ($\phi^I$ l2 #:t t)
+           ($\phi^I$ l3 #:t t))))
+    \end{lstlisting} & [] & [] \\ \hline
+    $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
+(program ([l3 (linklet () (k) (k))])
+  (let-inst t (make-instance)
+     (seq ($\phi^I$ (L$\alpha$ () ((Export a1 a a) (Export k1 k k))
+                   (define-values (k) (lambda () (var-ref a1)))
+                   (var-set! k1 k) 1) #:t t)
+           ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+                   (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+           ($\phi^I$ l3 #:t t))))
+    \end{lstlisting} & [] & [] \\ \hline
+    $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
+(program ()
+  (let-inst t (make-instance)
+     (seq ($\phi^I$ (L$\alpha$ () ((Export a1 a a) (Export k1 k k))
+                   (define-values (k) (lambda () (var-ref a1)))
+                   (var-set! k1 k) (void)) #:t t)
+           ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+                   (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+           ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+    \end{lstlisting} & [] & [] \\ \hline
+  \end{tabular}
+\end{table}
+
+After the compilation and loading phase, all the linklet objects are
+in $\la$ form and ready to be instantiated. Recall that a linklet
+instantiation has two modes; \textbf{i)} regular instantiation, where
+a new instance is being created and returned, and \textbf{ii)}
+targeted instantiation, where the given target instance is used during
+the instantiation. Since the only difference between the two modes is
+the return value, for simplicity in the model we remove the
+distinction by turning the regular instantiation into a targeted
+instantiation with a fresh empty instance. The result of both the
+instantiation is then a pair of the last expression's value and the
+target instance being used.
+
+At the start of instantiation, the imported variables are collected
+from the given linklet instances by simply going through each set of
+\emph{Import} objects in the $\la$ and the corresponding linklet
+instance that provides the variables. The collected variable
+references are then put into the environment with the names in the
+corresponding \emph{Import} objects that were generated for the
+variables during the compilation. Recall that a linklet may export a
+variable despite having no corresponding definition for it. This is
+achieved by for each \emph{Export} object in $\la$ grabbing the
+variable from the target instance if it has a mapping for it and
+making it available in the environment. Otherwise a fresh variable is
+created and its mapping is placed into the environment and into the
+target instance as well.
+
+\begin{figure}[h!]
+  \centering
+  \footnotesize
+%\begin{table}
+  \begin{tabular}{lc|c|c}
+    &\textbf{program} & \textbf{$\rho$} & \textbf{$\sigma$} \\ \hline \hline
+    $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
+(program ()
+  (seq ($\phi^I$ (L$\alpha$ () ((Export a1 a a) (Export k1 k k))
+                (define-values (k) (lambda () (var-ref a1)))
+                (var-set! k1 k) (void)) #:t t)
+        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+    \end{lstlisting} & [] & \thead{[t $\rightarrow$ (linklet-instance), \\li $\rightarrow$ (linklet-instance)]} \\ \hline
+    $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
+(program ()
+  (seq ($\phi^I$ (L$\beta$ t (define-values (k) (lambda () (var-ref a1)))
+                      (var-set! k1 k) (void)))
+        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+    \end{lstlisting} & \thead{[k1 $\rightarrow$ $var_k$, \\a1 $\rightarrow$ $var_a$]} & \thead{[$var_a$ $\rightarrow$ uninit,\\ $var_k$ $\rightarrow$ uninit,\\ t $\rightarrow$ (linklet-instance \\ (a $var_a$) (k $var_k$)), \\li $\rightarrow$ (linklet-instance)]} \\ \hline
+  \end{tabular}
+  \caption{The first linklet's Import and Export objects are processed.}
+%\end{table}
+\end{figure}
+
+After processing the import and export variables, the $\la$ object is
+reduced into $\lb$, which triggers the evaluation of the expressions
+in the linklet body. The linklet compilation makes sure that every
+variable reference within the body uses the appropriate variable, and
+at the beginning of the instantiation the preparation of the import
+and export variables explained above provides the actual variables in
+the environment to be modified and used. The reduction then proceeds
+with the evaluation of the body expressions one-by-one. After all the
+expressions are processed, a pair of the last expression's value and
+the reference to the target instance is returned.
+
+\begin{figure}[h!]
+  \centering
+  \footnotesize
+%\begin{table}
+  \begin{tabular}{lc|c|c}
+    &\textbf{program} & \textbf{$\rho$} & \textbf{$\sigma$} \\ \hline \hline
+    $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
+(program ()
+  (seq ($\phi^I$ (L$\beta$ t (var-set! k1 k) (void)))
+        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+    \end{lstlisting} & \thead{[k $\rightarrow$ $cell_1$,\\k1 $\rightarrow$ $var_k$,\\a1 $\rightarrow$ $var_a$]} & \thead{[$cell_1$ $\rightarrow$ closure,\\$var_a$ $\rightarrow$ uninit,\\$var_k$ $\rightarrow$ uninit,\\t $\rightarrow$ (linklet-instance\\(a $var_a$) (k $var_k$)),\\li $\rightarrow$ (linklet-instance)]} \\ \hline
+    $\longrightarrow_{\beta r}$&\begin{lstlisting}[mathescape]
+(program ()
+  (seq ($\phi^I$ (L$\beta$ t (var-set! k1 (closure () (var-ref a1) ((k1 $var_k$) (a1 $var_a$))))
+                       (void)))
+        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+    \end{lstlisting} & \thead{[k $\rightarrow$ $cell_1$,\\k1 $\rightarrow$ $var_k$,\\a1 $\rightarrow$ $var_a$]} & \thead{[$cell_1$ $\rightarrow$ closure,\\$var_a$ $\rightarrow$ uninit,\\$var_k$ $\rightarrow$ uninit,\\t $\rightarrow$ (linklet-instance\\(a $var_a$) (k $var_k$)),\\li $\rightarrow$ (linklet-instance)]} \\ \hline
+    $\longrightarrow_{\beta r}$&\begin{lstlisting}[mathescape]
+(program ()
+  (seq ($\phi^I$ (L$\beta$ t (void)))
+        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+    \end{lstlisting} & \thead{[k $\rightarrow$ $cell_1$,\\k1 $\rightarrow$ $var_k$,\\a1 $\rightarrow$ $var_a$]} & \thead{[$cell_1$ $\rightarrow$ closure,\\$var_a$ $\rightarrow$ uninit,\\$var_k$ $\rightarrow$ closure,\\t $\rightarrow$ (linklet-instance\\(a $var_a$) (k $var_k$)),\\li $\rightarrow$ (linklet-instance)]} \\ \hline
+    $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
+(program ()
+  (seq ((void) t)
+        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+    \end{lstlisting} & \thead{[k $\rightarrow$ $cell_1$,\\k1 $\rightarrow$ $var_k$,\\a1 $\rightarrow$ $var_a$]} & \thead{[$cell_1$ $\rightarrow$ closure,\\$var_a$ $\rightarrow$ uninit,\\$var_k$ $\rightarrow$ closure,\\t $\rightarrow$ (linklet-instance\\(a $var_a$) (k $var_k$)),\\li $\rightarrow$ (linklet-instance)]} \\ \hline
+  \end{tabular}
+  \caption{The first linklet is being instantiated. (Only showing the essential reduction steps)}
+%\end{table}
+\end{figure}
+
+The reduction of the program continues by similarly instantiating the
+other two linklets and finally returning the last value in the
+\verb|seq| form.
+
+\begin{figure}[h!]
+  \footnotesize
+  \begin{mdframed}
+    \begin{align*}
+      \rcinput{x} \rcrel \rcoutput{\sigma[\rho[x]]}{\rho}{\sigma} \\
+      \rcinput{(\textbf{var\dash ref}\; x))} \rcrel \rcoutput{v}{\rho}{\sigma} \\
+      \;    &\; \hspace{2cm} \where x \in \rho, \rho[x] \in \sigma, v = \sigma[\rho[x]]\; \&\; v \neq uninit\\
+      \rcinput{(\textbf{var\dash ref/no\dash check}\; x))} \rcrel \rcoutput{v}{\rho}{\sigma}\; \where v = \sigma[\rho[x]] \\
+      \rcinput{(\textbf{var\dash set!}\; x\; v)} \rcrel \rcoutput{(void)}{\rho}{\sigma_1} \where \sigma_1 = \sigma[\rho[x]\rightarrow v]\\
+      \rcinput{(\textbf{var\dash set/check\dash undef!}\; x\; v)} \rcrel \rcoutput{(void)}{\rho}{\sigma_1} \where \sigma_1 = \sigma[\rho[x]\rightarrow v], x \in \rho\\
+      \rcinput{(\textbf{set!}\; x\; v)} \rcrel \rcoutput{(void)}{\rho}{\sigma_1} \where \sigma_1 = \sigma[\rho[x]\rightarrow v]\\
+      \rcinput{(\textbf{lambda}\; (x\; \ldots)\; e)} \rcrel \rcoutput{(closure\; (x\; \ldots)\; e\; \rho)}{\rho}{\sigma} \\
+      \rcinput{(\textbf{begin}\; v\; \ldots\; v_l)} \rcrel \rcoutput{v_l}{\rho}{\sigma} \\
+      \rcinput{(\textbf{if}\; v\; e_1\; e_2)} \rcrel \rcoutput{e}{\rho}{\sigma} \where e = \begin{cases*}
+        e_2 & if $v = false$ \\
+        e_1 & otherwise
+      \end{cases*}\\
+      \rcinput{(o\; v_1\; v_2)} \rcrel \rcoutput{\delta(v_1,v_2)}{\rho}{\sigma} \\
+      \rcinput{((closure\; (x\; \ldots)\; e\; \rho_c)\;v\;\ldots)} \rcrel \rcoutput{e}{\rho_1}{\sigma_1} \\
+      \;     &\; \hspace{1cm} \where \rho_1 = \rho_c\overline{[x\rightarrow cell]}, \sigma_1 = \sigma\overline{[cell\rightarrow v]}, cell \notin \sigma
+    \end{align*}
+    \caption{Reduction Relation for Racket Core}
+    \label{fig:rc-reduction}
+  \end{mdframed}
+\end{figure}
+
+
+\begin{figure}[h!]
+  \footnotesize
+  \begin{mdframed}
+    \begin{align*}
+      \redinput{\bm{\Phi^V}(x_{li},\; x)} \rel \redoutput{v}{\rho}{\sigma} \where v\; =\; \sigma[(\sigma[x_{li}])[x]] \\
+      \redinput{(\textbf{let\dash inst}\; x\; (v\;x_i)\; p\dash top)} \rel \redoutput{p\dash top}{\rho}{\sigma_1} \where \sigma_1 = \sigma[x\rightarrow \sigma[x_i]] \\
+      \redinput{(\textbf{seq}\; v_{1}\; \ldots\; v_{n})} \rel \redoutput{v_{n}}{\rho}{\sigma} \\
+      \redinput{(\bm{\Phi^I}\; (\lb\; x\; v\; \ldots\; v_{l}))} \rel \redoutput{(v_{l}\; x)}{\rho}{\sigma} \\
+      EP\;\llbracket (\bm{\Phi^I}(\lb\; x_{t}\; v_p\; \ldots\; (\textbf{define\dash values}\; (x)\; v)\; l\dash top\; \ldots)) \rrbracket, \rel \redoutput{\bm{\Phi^I}(\lb\; x_{t}\; v_p\; \ldots\; l\dash top\; \ldots)}{\rho_1}{\sigma_1} \\
+      \;          &\;\; \where \rho_1 = \rho[x\rightarrow cell],\; \sigma_1 = \sigma[cell\rightarrow v] \\
+      \redinput{(\bm{\Phi^I}(\la\; c\dash imps \; c\dash exps \; l\dash top \ldots)\; LI\; \ldots)} \rel \redoutput{(\bm{\Phi^I}(\la\; c\dash imps \; c\dash exps \; l\dash top\; \ldots)\; LI\; \ldots\; \textbf{\#:t}\; x_{t})}{\rho}{\sigma_1} \\
+      \;          &\;\; \where x_t \notin \mathit{dom}(\sigma), \sigma_1 = \sigma[x_t\rightarrow (linklet\dash instance)] \\
+      EP\;\llbracket (\bm{\Phi^I}(\la\; c\dash imps \; c\dash exps \; l\dash top \ldots)\; LI\; \ldots\; \textbf{\#:t}\; x_{t}) \rrbracket, \rho, \sigma\; \rel \redoutput{(\bm{\Phi^I}(\lb\; x_{t}\; l\dash top\; \ldots))}{\rho_2}{\sigma_1} \\
+      \; &\;\; \where \rho_1 = \mathit{V}^I(c\dash imps, (LI\; \ldots), \rho) \\
+      \;          &\;\; \hspace{0.4cm} (\rho_2, \sigma_1) = \mathit{V}^E(c\dash exps, x_t, \rho_1, \sigma) \\
+      (\textbf{program}\; ((x\;L),(x_1\;L_1)\;\ldots)\;p\dash top), \rho, \sigma &\longrightarrow_{\beta p}\; (\textbf{program}\; ((x_1\;L_1)\;\ldots)\;p\dash top[x := \bm{\Phi^C}(L)]), \rho, \sigma \\ \\
+      eval^{\longrightarrow_{\beta p}}(p) &=\; v\; \textbf{if}\; p, (), () \twoheadrightarrow_{\beta p\cup\beta r} \; (\textbf{program}\; ()\;(v\;\_)) \\ \\
+      \mathit{V}^I : c\dash imps \times (LI\;\ldots) \times \rho &\longrightarrow \rho \\
+      \mathit{V}^I((\overline{(\overline{(\textbf{Import}\; x_{id}\;x_{int}\;x_{ext})})_n}), (\overline{LI_n}), \rho) &= \rho\overline{[x_{id}\rightarrow LI_n[x_{ext}]]}\\ \\
+      \mathit{V}^E : c\dash exps \times x \times \rho \times \sigma &\longrightarrow \rho \times \sigma \\
+      \mathit{V}^E((exp\dash obj\;\ldots), x_t, \rho, \sigma) &= \mathit{P}(exp\dash obj, x_t, \sigma[x_t], \rho, \sigma)\;\ldots\\
+      \mathit{P}((\textbf{Export}\;x_{id}\;x_{int}\;x_{ext}), x_t, LI_t, \rho, \sigma) &= \begin{cases*}
+        \rho_1, \sigma & if $\;x_{ext} \in dom(LI_t)$, \where $\rho_1 = \rho[x_{id}\rightarrow LI_t[x_{ext}]]$ \\
+        \rho_1, \sigma_1 & if $\;x_{ext} \notin dom(LI_t)$, \where $\rho_1 = \rho[x_{id}\rightarrow var_{new}]$\\
+        \;        &\; \hspace{2.6cm} $var_{new} \notin \sigma$ \\
+        \;        &\; \hspace{2.6cm} $\sigma_1 = \sigma[var_{new}\rightarrow uninit,$ \\
+          \;        &\; \hspace{3.2cm} $x_t\rightarrow LI_t[x_{ext}\rightarrow var_{new}]]$
+      \end{cases*} \\
+    \end{align*}
+    \centering
+    \footnotesize $\Phi^V : \textbf{instance\dash variable\dash value}\:,\: \Phi^I : \textbf{instantiate\dash linklet},\:\Phi^C : \textbf{compile\dash linklet}$
+
+    \footnotesize $\mathit{V}^I : \textbf{get  import variables},\: \mathit{V}^E : \textbf{create variables for exports}$
+    \caption{Reduction Relation}
+    \label{fig:reduction}
+  \end{mdframed}
+\end{figure}
