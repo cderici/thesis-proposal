@@ -1,17 +1,101 @@
+\newpage
+
 \subsection{Performance Issues with Self-Hosting on JIT Compilers}
 \label{subsec:performance}
 
-With many micro-benchmarks and larger experiments, the existing Pycket
-implementation is shown to be significantly performant in evaluating
-Racket code. It benefits from the the existing generic optimizations
-in the RPython framework, including common subexpression elimination,
-copy propogation, constant folding, loop invariant code motion,
-malloc-removal and the inlining that naturally comes for free from
-tracing \cite{loop-aware:12, hotpath:06, malloc-removal:11}, as well
-as from many improvements on the interpreter such as environment
+With many micro and macro benchmarks and larger experiments, the
+existing Pycket implementation is shown to be significantly performant
+in evaluating Racket code. It benefits from the the existing generic
+optimizations in the RPython framework, including common subexpression
+elimination, copy propogation, constant folding, loop invariant code
+motion, malloc-removal and the inlining that naturally comes for free
+from tracing \cite{loop-aware:12, hotpath:06, malloc-removal:11}, as
+well as from many improvements on the interpreter such as environment
 pruning, data structure specialization, strategies, as well as some
-gradual typing related improvements such the use of hidden-classes
-\cite{pycket15, pycket17}.
+gradual typing related improvements such as the use of
+hidden-classes. However, it is also shown that in some cases Pycket is
+significantly slower than all the other systems, on "almost
+exclusively recursive programs with data-dependent control flow in the
+style of an interpreter over an AST" \cite{pycket15, pycket17}.
+
+Tracing interpreter-style programs with complex control-flow paths is
+a known weakness of JIT compilers. The large number of branches not
+only cripple the JIT optimizations but also causes the traces to be
+data driven. For example, consider the following program, which is a
+highly simplified version of the \racketcode{fasl->s-exp} function of
+the FASL library in Racket, modified specifically to demonstrate the
+control-flow problem.
+
+\begin{wrapfigure}[18]{l}{0.5\textwidth}
+\small
+\begin{lstlisting}[mathescape]
+(define (branchy lst)
+  (letrec
+    ([loop
+      (lambda (lst)
+        (let ([index (if (null? lst) 3 (car lst))])
+          (if (null? lst)
+              -1
+              (if (< index 3)
+                  (if (< index 2)
+                      (loop (cdr lst))
+                      (loop (cdr lst)))
+                  (if (< index 5)
+                      (if (< index 4)
+                          (+ 3 (loop (cdr lst)))
+                          (+ 5 (loop (cdr lst))))
+                      (if (< index 6)
+                          (loop (cdr lst))
+                          (+ 1 (loop (cdr lst)))))))))])
+   (loop lst)))
+\end{lstlisting}
+\end{wrapfigure}
+
+Tracing this program running with an input, say \racketcode{'(1 5 3)},
+produces a trace that follows the control-flow path of the program for
+that input, making the tracing quite wasteful because for any other
+input, say \racketcode{'(4 7 1)} which follows an entirely different
+path on the program, the JIT produces, compiles and optimizes yet
+another trace for that input, unable to use the previously generated
+trace. This problem not only increases the warmup time but also
+produces traces that are unlikely to be frequently re-used, since the
+input data itself is not necessarily repetitive.
+
+This problem is immediately observable on Pycket self-hosting Racket
+through the expander linklet, because the interpreter style programs
+with complex control-flow paths are quite central in self-hosting a
+language (e.g. expand, fasl etc.). Additionally, since the Pycket's
+level of language abstraction is increased one step further, the
+generated traces are much larger, which creates a pressure for the
+JIT's compiler and optimizer. As a result, in the run-time Pycket
+spends a lot of time compiling and optimizing traces, but often bails
+out and interprets the code instead of using the traces, which defeats
+the purpose of using a tracing JIT.
+
+One of the major actors in this play is the loop invariant code motion
+optimization performed by the JIT \cite{loop-aware:12}. This
+optimization prepends a trace to itself, moving all the loop-invariant
+operations (usually the operations for destructuring the interpreter
+state - CEK) into the preamble, keeping all the essential operations
+in the peeled-iteration (the inner loop). Any trace or a side-trace
+(i.e. a \emph{bridge}) that is able to jump to the peeled-iteration of
+another trace therefore saves time by not performing the
+loop-invariant operations. In order to do so, however, the program
+state needs to be consistent with the one that is expected by the
+peeled-iteration.
+
+The program state consists of heap allocated objects
+(e.g. environment, continuation), the virtuals (malloc-removed parts
+of the interpreter state), and other loop information such as range
+values. In order to jump to a peeled-iteration, the state needs to
+match with the one that the iteration is expecting, e.g. the same
+state at the end of its preamble. On the other hand, jumping to the
+preamble of a trace requires the allocation of all the unallocated
+parts of the interpreter state.
+
+
+
+
 
 Adding the linklets layer to the front-end of the existing
 implementation doesn't have any effect on the benchmark performance,
@@ -91,47 +175,8 @@ control flow thanks to the hints and annotations in meta-tracing
 gets more complicated. Consider the following program being
 meta-traced:
 
-{\small
-\begin{lstlisting}[mathescape]
-(define (branchy lst)
-  ((letrec
-     ([loop (lambda (lst)
-              (let ([index (if (null? lst) 3 (car lst))])
-                (if (null? lst) -1
-                    (if (< index 18)
-                        (if (< index 3)
-                            (if (< index 2)
-                                (loop (cdr lst))
-                                (loop (cdr lst)))
-                            (if (< index 5)
-                                (if (< index 4)
-                                    (+ 3 (loop (cdr lst)))
-                                    (+ 5 (loop (cdr lst))))
-                                (if (< index 6)
-                                    (loop (cdr lst))
-                                    (if (< index 7)
-                                        (loop (cdr lst))
-                                        (loop (cdr lst))))))
-                        (if (< index 12)
-                            (if (< index 9)
-                                (loop (cdr lst))
-                                (if (< index 10)
-                                    (+ 9 (loop (cdr lst)))
-                                    (if (< index 11)
-                                        (+ 10 (loop (cdr lst)))
-                                        (loop (cdr lst)))))
-                            (if (< index 14)
-                                (if (< index 13)
-                                    (let ()
-                                         (loop (cdr lst))
-                                         1.3)
-                                    (+ 13 (loop (cdr lst))))))))))]))
-  (loop lst)))
-\end{lstlisting}}
 
-This toy program is a simplification of the \texttt{fasl-\textgreater
-  s-exp} function of the FASL library in Racket, which given a byte
-stream, decodes the stream into an s-expression.
+
 
 The trace for the loop depends on the input.
 
