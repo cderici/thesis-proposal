@@ -16,15 +16,19 @@ gradual typing related improvements such as the use of
 hidden-classes. However, it is also shown that in some cases Pycket is
 significantly slower than all the other systems, on "almost
 exclusively recursive programs with data-dependent control flow in the
-style of an interpreter over an AST" \cite{pycket15, pycket17}.
+style of an interpreter over an AST" \cite{pycket15, pycket17}. In
+this section we identify the key points of these issues and propose
+solution approaches that will be essential in implementing efficient
+run-times for self-hosting functional langauges on meta-tracing JIT
+compilers.
 
 Tracing interpreter-style programs with complex control-flow paths is
 a known weakness of JIT compilers. The large number of branches not
 only cripple the JIT optimizations but also causes the traces to be
-data driven. For example, consider the following program, which is a
-highly simplified version of the \racketcode{fasl->s-exp} function of
-the FASL library in Racket, modified specifically to demonstrate the
-control-flow problem.
+highly data driven. For example, consider the following program, which
+is a highly simplified version of the \racketcode{fasl->s-exp}
+function of the FASL library in Racket, modified specifically to
+demonstrate the control-flow problem.
 
 \begin{wrapfigure}[18]{l}{0.5\textwidth}
 \small
@@ -72,17 +76,18 @@ spends a lot of time compiling and optimizing traces, but often bails
 out and interprets the code instead of using the traces, which defeats
 the purpose of using a tracing JIT.
 
-One of the major actors in this play is the loop invariant code motion
+Another major actor in this play is the loop invariant code motion
 optimization performed by the JIT \cite{loop-aware:12}. This
 optimization prepends a trace to itself, moving all the loop-invariant
 operations (usually the operations for destructuring the interpreter
-state - CEK) into the preamble, keeping all the essential operations
-in the peeled-iteration (the inner loop). Any trace or a side-trace
-(i.e. a \emph{bridge}) that is able to jump to the peeled-iteration of
-another trace therefore saves time by not performing the
-loop-invariant operations. In order to do so, however, the program
-state needs to be consistent with the one that is expected by the
-peeled-iteration.
+state) into the preamble, keeping all the essential operations in the
+peeled-iteration (the inner loop). An example of this can be seen in
+the trace in \figref{fig:trace} in \secref{subsec:rpython}. Any trace
+or a side-trace (i.e. a \emph{bridge}) that is able to jump to the
+peeled-iteration of another trace therefore saves time by not
+performing the loop-invariant operations. In order to do so, however,
+the program state needs to be consistent with the one that is expected
+by the peeled-iteration.
 
 The program state consists of heap allocated objects
 (e.g. environment, continuation), the virtuals (malloc-removed parts
@@ -91,25 +96,48 @@ values. In order to jump to a peeled-iteration, the state needs to
 match with the one that the iteration is expecting, e.g. the same
 state at the end of its preamble. On the other hand, jumping to the
 preamble of a trace requires the allocation of all the unallocated
-parts of the interpreter state.
+parts of the interpreter state. If a bridge that is produced for a
+side-exit is used to jump back to the original trace, the JIT tries to
+make it jump to the peeled-iteration whenever possible to avoid
+performing the loop-invariant operations. However, this often fails on
+Pycket because the interpreter state often can't match the expected
+state, because the state is changed differently by different control
+flow paths (e.g. non-tail calls add a continuation frame). Note that
+on Pycket the major parts in the interpreter state is composed by the
+environment and the continuation, which are heap allocated objects.
+
+This issue is partly addressed in the previous versions of Pycket by
+allowing the JIT to allocate a little bit more to force a match
+between the states. The malloc-removal and escape analysis in the
+trace optimizer often allows the JIT to remove parts of state and
+create virtuals for the objects that never escape the loop
+\cite{malloc-removal:11, loop-aware:12}. The introduced heuristic on
+Pycket allows the JIT to allocate such objects elided by the
+optimizations, trading some space for jumping into the inner loop to
+avoid performing loop-invariant operations. It is shown that with this
+heuristic the performance in gradual typing is increased by 4\% on
+Pycket, while adding no extra overhead \cite{pycket17}.
+
+Adding the linklets layer to the front-end allows Pycket to run large
+Racket programs including the expander itself. To give a perspective,
+the offline generated expander linklet that is processed in Pycket at
+boot itself is roughly 5MB file containing the s-expressions of 2642
+functions. Another example is, to run a single Racket program written
+in the \emph{racket/base} language (such as repl for instance), more
+than 100 Racket modules need to be expanded and instantiated first
+just to load the language before running the program itself.
 
 
-
-
-
-Adding the linklets layer to the front-end of the existing
+the existing
 implementation doesn't have any effect on the benchmark performance,
 since the linklets layer only adds the capability of processing and
 running linklets and doesn't include or change anything in the
-Pycket's back-end. However, having the linklets allows Pycket to run
-the programs that are much larger than micro-benchmarks or individual
-experiment programs. To give a perspective, the offline generated
-expander linklet that is processed in Pycket at boot itself is roughly
-5MB file containing the s-expressions of 2642 functions. Another
-example is, to run a single Racket program written in the
-\emph{racket/base} language (such as repl for instance), more than 100
-Racket modules need to be expanded and instantiated first just to load
-the language before running the program itself.
+Pycket's back-end. However, having the linklets allows Pycket
+
+to run the programs that are much larger than micro-benchmarks or
+individual experiment programs.
+
+
 
 In addition to the problem of being have to evaluate larger programs,
 self-hosting also reveals an issue that is fundamental to the tracing

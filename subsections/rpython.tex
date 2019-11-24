@@ -6,7 +6,7 @@
     \centering
     \begin{minipage}[t]{0.32\textwidth}
       \begin{minted}[numbersep=0pt,gobble=0,linenos,numbers=right,fontsize=\scriptsize,frame=lines]{python}
-# start of the trace (outer loop)
+# start of the trace (preamble)
 label(p0, p1, descr="64723312")
 guard_not_invalidated()
 guard_class(p0, ConsEnv)
@@ -21,7 +21,7 @@ p9 = getfield_gc_r(p1, descr="LetCont.ast")
 guard_value(p9, ConstPtr(ptr10))
 p11 = getfield_gc_r(p1, descr="LetCont.env")
 p12 = getfield_gc_r(p1, descr="LetCont.prev")
-# inner loop
+# peeled-iteration (inner loop)
 label(p11, i7, p12, descr="64723392")
 guard_not_invalidated()
 guard_class(p11, ConsEnv)
