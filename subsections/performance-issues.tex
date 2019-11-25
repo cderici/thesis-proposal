@@ -119,32 +119,50 @@ heuristic the performance in gradual typing is increased by 4\% on
 Pycket, while adding no extra overhead \cite{pycket17}.
 
 Adding the linklets layer to the front-end allows Pycket to run large
-Racket programs including the expander itself. To give a perspective,
-the offline generated expander linklet that is processed in Pycket at
-boot itself is roughly 5MB file containing the s-expressions of 2642
+Racket programs including the expander. To give a perspective, the
+offline generated expander linklet that is processed in Pycket at boot
+itself is roughly 5MB file containing the s-expressions of 2642
 functions. Another example is, to run a single Racket program written
 in the \emph{racket/base} language (such as repl for instance), more
 than 100 Racket modules need to be expanded and instantiated first
-just to load the language before running the program itself.
+just to load the language before running the program itself. While
+Pycket's performance on the micro-benchmarks is not effected by the
+linklet layer (since nothing has changed in the back-end), these large
+programs that are now runnable on Pycket aggravate these issues
+observed before.
 
+Additionally, as we described in \secref{subsec:pycket}, given a
+Racket module, Pycket now first runs the expander to fully expand the
+module before running it. Since the expansion of a given Racket module
+is included in Pycket's run-time, the JIT suffers from a large number
+of heap allocations for the continuation chains often caused by the
+control indirections within the macro-system. This, in turn, creates a
+pressure for the garbage collection, as the GC is triggered by
+allocations.
 
-the existing
-implementation doesn't have any effect on the benchmark performance,
-since the linklets layer only adds the capability of processing and
-running linklets and doesn't include or change anything in the
-Pycket's back-end. However, having the linklets allows Pycket
+\subsubsection{Meta-Tracing Complex Control Flows}
 
-to run the programs that are much larger than micro-benchmarks or
-individual experiment programs.
+%% As discussed in \secref{subsec:rpython}, a trace is generated in a
+%% meta-tracing framework by accompanying an interpreter while it is
+%% evaluating a program and detecting hot-loops. During this process, the
+%% tracer exactly follows all the operations in the interpreter. For
+%% example, if a function application is being evaluated, the next
+%% operation to be interpreted will be the first operation in the
+%% function's body\footnote{This is why inlining comes naturally from
+%%   tracing.}. While this approach works quite well in generating
+%% re-usable and concise traces for programs/loops with a straightforward
+%% control flow thanks to the hints and annotations in meta-tracing
+%% \cite{bolz09}, it becomes significantly harder when the control flow
+%% gets more complicated. Consider the following program being
+%% meta-traced:
 
+Here's the ideal trace we would like to see independent of the input: ....
 
+Here's how we can solve the issue of tracing branchy code, meta-hints
+etc. (regexp stuff)
 
-In addition to the problem of being have to evaluate larger programs,
-self-hosting also reveals an issue that is fundamental to the tracing
-JIT compilers, which is being have to evaluate large dispatch-loops
-that create complex control flows that are significantly hard for
-tracing. In this section we study both of these problems and attempt
-to understand the key parts to address them in the next section.
+- show how to make the regexp implementation faster and explain.
+
 
 \subsubsection{Garbage Collection (GC) Pressure}
 
@@ -185,29 +203,11 @@ mark-and-sweep creates a pressure on the run-time performance.
 
 EXAMPLE
 
-\newpage
 
-\subsubsection{Meta-Tracing Complex Control Flows}
+Here's how introducing another interpreter that uses the stack might
+help with the heap (therefore solving the GC pressure issue).
 
-As discussed in \secref{subsec:rpython}, a trace is generated in a
-meta-tracing framework by accompanying an interpreter while it is
-evaluating a program and detecting hot-loops. During this process, the
-tracer exactly follows all the operations in the interpreter. For
-example, if a function application is being evaluated, the next
-operation to be interpreted will be the first operation in the
-function's body\footnote{This is why inlining comes naturally from
-  tracing.}. While this approach works quite well in generating
-re-usable and concise traces for programs/loops with a straightforward
-control flow thanks to the hints and annotations in meta-tracing
-\cite{bolz09}, it becomes significantly harder when the control flow
-gets more complicated. Consider the following program being
-meta-traced:
+- typeset the judgment rules for stackful interpeter
 
-
-
-
-The trace for the loop depends on the input.
-
-Here's the trace we get when run this on this input : .....
-
-Here's the ideal trace we would like to see independent of the input: ....
+- preliminary experiments, where CEK+stackful performs better than
+just CEK
