@@ -3,7 +3,56 @@
 \section{Related Work}
 \label{sec:related}
 
-?
+
+pypy \cite{rpython07}
+
+graal \cite{graal:13}
+
+\cite{bolz15-meta-vm} stated that in general-purpose object-oriented
+VMs, the compiler is op- timized for the language, or group of
+languages, it was de- signed for. If a language’s semantics are
+significantly differ- ent and thus do not fit the VM well, it will
+perform poorly— despite a highly optimized underlying VM.
+
+
+\cite{ast:12} argues that AST interpreters allow for much more
+extensive modifications.
+
+\cite{branch-predict:03} optimizing indirect branch prediction accuracy in VM interpreters
+
+Virtual machine showdown: Stack versus registers.
+
+Another approach is to add support for dynamic lan- guages to an
+existing high-performance static-language VM \cite{stJITdyn:12,
+  dynStatComp:12}.
+
+heap allocated continuations \cite{whatever:19, compWithContLLVM:16}
+
+collapsing towers of interpreters \cite{collapse:17}
+
+Hierarchical Layering of VMs \cite{layering:09}
+
+Bootstrapping a Self-hosted Research Virtual Machine for JavaScript:
+An Experience Report \cite{self-hostJSvm:11}
+
+% since we are not able to
+
+%% Bilmemne et al presents ..... In contrast to Pycket, in this system
+%% ..... However, Pycket does not .....
+
+%% \paragraph{just description}
+%% Occurrence Typing Occurrence typing [43, 42] extends the type system
+%% with a proposition environment that represents the information on the
+%% types of bindings down conditional branches. These propositions are
+%% then used to update the types associated with bindings in the type
+%% environment down branches so binding occurrences are given different
+%% types depending on the branches they appear in, and the conditionals
+%% that lead to that branch.
+
+% Notably, they further perform a qualitative analysis aiming to
+% identify the reasons why
+
+% There are other works that are relevant to our investigations of ....
 
 % one sentence
 
