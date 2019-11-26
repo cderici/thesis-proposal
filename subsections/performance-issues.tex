@@ -25,35 +25,48 @@ compilers.
 Tracing interpreter-style programs with complex control-flow paths is
 a known weakness of JIT compilers. The large number of branches not
 only cripple the JIT optimizations but also causes the traces to be
-highly data driven. For example, consider the following program, which
-is a highly simplified version of the \racketcode{fasl->s-exp}
-function of the FASL library in Racket, modified specifically to
-demonstrate the control-flow problem.
+highly data driven. For example, consider the following program in
+\figref{fig:regexp}, which is a highly simplified version of the
+\racketcode{fasl->s-exp} function of the FASL library in Racket,
+modified specifically to demonstrate the control-flow problem.
 
-\begin{wrapfigure}[18]{l}{0.5\textwidth}
-\small
-\begin{lstlisting}[mathescape]
-(define (branchy lst)
-  (letrec
-    ([loop
-      (lambda (lst)
-        (let ([index (if (null? lst) 3 (car lst))])
-          (if (null? lst)
-              -1
-              (if (< index 3)
-                  (if (< index 2)
-                      (loop (cdr lst))
-                      (loop (cdr lst)))
-                  (if (< index 5)
-                      (if (< index 4)
-                          (+ 3 (loop (cdr lst)))
-                          (+ 5 (loop (cdr lst))))
-                      (if (< index 6)
-                          (loop (cdr lst))
-                          (+ 1 (loop (cdr lst)))))))))])
-   (loop lst)))
+\begin{figure}[h!]
+  %\vspace{-0.5cm}
+\footnotesize
+\begin{lstlisting}[mathescape,escapechar=\%]
+
+a 	Matches the specified character literal          q       q
+* 	Matches 0 or more of the previous character      a*      "", a, aa, aaa
+. 	Matches any character literal                    .       a, b, c, d, e ...
+^ 	Matches the start of a string                    ^c      c, ca, caa, cbb ...
+
+(define (match-star pattern p-pos str s-pos star-pos m)
+  (or (and (< s-pos (string-length str)) (char=? (string-ref pattern p-pos) (string-ref str s-pos))
+            (%\underline{match-pat}% pattern p-pos str (add1 s-pos) (cons (string-ref str s-pos) m)))
+       (%\underline{match-pat}% pattern (add1 star-pos) str s-pos m)))
+
+(define (match-pat pattern p-pos str s-pos m)
+  (cond
+    [(>= p-pos (string-length pattern)) m]
+    [(and (< (+ p-pos 1) (string-length pattern)) (char=? (string-ref pattern (+ p-pos 1)) #\*))
+      (%\underline{match-star}% pattern p-pos str s-pos (+ p-pos 1) m)]
+    [(char=? (string-ref pattern p-pos) #\.)
+      (and (< s-pos (string-length str)) (%\underline{match-pat}% pattern (add1 p-pos) str (add1 s-pos) (cons (string-ref str s-pos) m)))]
+    [else
+     (and (char=? (string-ref pattern p-pos) (string-ref str s-pos))
+           (%\underline{match-pat}% pattern (add1 p-pos) str (add1 s-pos) (cons (string-ref str s-pos) m)))]))
+
+(define (reg-match pattern str)
+  (let ([m (cond
+             [(char=? (string-ref pattern 0) #\^) (match-pat pattern 1 str 0 '())]
+             [(string=? str "") (match-pat pattern 0 str 0 '())] ; edge case
+             [else (for/or ([i (in-range (string-length str))])
+               (match-pat pattern 0 str i '()))])])
+    (and m (list (list->string (reverse m))))))
 \end{lstlisting}
-\end{wrapfigure}
+\caption{A simple regular expression matcher (some cases are removed for space).}
+\label{fig:regexp}
+\end{figure}
 
 Tracing this program running with an input, say \racketcode{'(1 5 3)},
 produces a trace that follows the control-flow path of the program for
@@ -75,6 +88,14 @@ JIT's compiler and optimizer. As a result, in the run-time Pycket
 spends a lot of time compiling and optimizing traces, but often bails
 out and interprets the code instead of using the traces, which defeats
 the purpose of using a tracing JIT.
+
+%% The major part of the problem is about loop-detection. While the loop
+%% detection is in general quite central in tracing JITs, for Pycket it
+%% is a bit more tricky, as Pycket works on a higher level of abstraction
+%% (program AST) than a lower-level bytecode interpreter, and the only
+%% way to create a loop is through a function application. Moreover, the
+%% self-hosting adds yet another level of abstraction on top, making the
+%% loop detection in the source-level even more difficult.
 
 Another major actor in this play is the loop invariant code motion
 optimization performed by the JIT \cite{loop-aware:12}. This
@@ -138,9 +159,8 @@ is included in Pycket's run-time, the JIT suffers from a large number
 of heap allocations for the continuation chains often caused by the
 control indirections within the macro-system. This, in turn, creates a
 pressure for the garbage collection, as the GC is triggered by
-allocations.
-
-\subsubsection{Meta-Tracing Complex Control Flows}
+allocations. Next I will study the solution approaches for these
+issues, which will be the main contributions of my thesis.
 
 %% As discussed in \secref{subsec:rpython}, a trace is generated in a
 %% meta-tracing framework by accompanying an interpreter while it is
@@ -156,15 +176,43 @@ allocations.
 %% gets more complicated. Consider the following program being
 %% meta-traced:
 
-Here's the ideal trace we would like to see independent of the input: ....
+To understand the issue better, it is important to first see how the
+loop detection currently works on Pycket. While for the low-level
+languages such as in a bytecode interpreter a program counter is used
+to detect loops, in Pycket the focus is on function applications,
+since Pycket works on program ASTs and the only AST that may create
+loops is an application. As reported in the previous studies, Pycket
+utilizes two techniques, namely the two-state tracking and the use of
+a dynamic call-graph. In both techniques the idea is to eliminate the
+"false-loops" among all the observed trace headers (i.e. potential
+start of a loop). The two-state tracking encodes the trace headers as
+a pair of a lambda body and its call-site, and the call-graph method
+detects cycles on a dynamically generated call-graph to handle extra
+levels of indirection. These approaches together are proven to be very
+effective in tracing code with a heavy use of shared control-flow
+indirections, such as the contract system \cite{pycket15,pycket17}.
+
+The ideal trace that we would like to see for the program in
+\figref{fig:branchy} would consists of a single sequence of side-exits
+(guards) for all the conditions to dispatch into the corresponding
+bridges for each branch, each of which will eventually jump back to
+the original loop. However with the current methods on Pycket, the
+loop is segmented into multiple traces where all the codes for the
+branches are inlined and each trace is specialized to a one particular
+path driven by the input data.
 
 Here's how we can solve the issue of tracing branchy code, meta-hints
 etc. (regexp stuff)
 
 - show how to make the regexp implementation faster and explain.
 
+===========================================================
 
-\subsubsection{Garbage Collection (GC) Pressure}
+The second issue that we identified as one of the essential problems
+in self-hosting Racket on meta-traced CEK is the GC pressure caused by
+the long chains of continuation allocations on the heap. To understand
+the issue better, we start by briefly describing the GC utilized by
+the RPython framework.
 
 As briefly described in \secref{subsec:rpython}, the flow graphs and
 the C code that are generated during the translation in the RPython
@@ -185,29 +233,84 @@ the amount of live objects that are used by the program fits in the
 nursery (set to be the size of CPU Level 2 cache). \cite{pypy06,
   bolz:14, gc:16, gc:12}
 
+\begin{wrapfigure}[19]{l}{0.5\textwidth}
+  \vspace{-0.5cm}
+\small
+\begin{lstlisting}[mathescape]
+(define (branchy lst)
+  (letrec
+    ([loop
+      (lambda (lst)
+        (let ([index (if (null? lst) 3 (car lst))])
+          (if (null? lst)
+              -1
+              (if (< index 3)
+                  (if (< index 2)
+                      (loop (cdr lst))
+                      (loop (cdr lst)))
+                  (if (< index 5)
+                      (if (< index 4)
+                          (+ 3 (loop (cdr lst)))
+                          (+ 5 (loop (cdr lst))))
+                      (if (< index 6)
+                          (loop (cdr lst))
+                          (+ 1 (loop (cdr lst)))))))))])
+   (loop lst)))
+\end{lstlisting}
+\caption{A simple program with non-trivial control flow.}
+\label{fig:branchy}
+\end{wrapfigure}
+
 Now that the Racket's expander is used to expand a given module within
 the Pycket's run-time, the life in the heap is much different than
 what a generational GC would like to see. The allocated objects are
 rather big and live very long. Even the expander itself is allocated
 as a linklet instance containing more than 2000 variables, and live
-until the expansion of the given Racket module as well as its language
-(entailing the expansion of many Racket modules) is completed. Another
-example is the long continuation chains caused by the large depth of
-the real-world Racket programs such as the macro-system or the
-module-system. The \emph{minimark GC} moves the old and/or big objects
-out of the semispace ("external"), where they will not be moved and
-collected in a mark-and-sweep fashion to avoid costly moves. However,
-since our setup creates many objects (often large) that live long, not
-only we benefit the nursery approach enough but also the
-mark-and-sweep creates a pressure on the run-time performance.
+during the whole run-time. Another example is the long continuation
+chains caused by the large depth of the real-world Racket programs
+such as the macro-system or the module-system. In the \emph{minimark
+  GC} the old and/or big objects are moved out of the semispace
+("external"), where they will not be moved anymore and collected in a
+mark-and-sweep fashion to avoid costly moves. However, since our setup
+creates many objects (often large) that live long, not only we don't
+benefit the nursery approach enough but also the mark-and-sweep
+process creates a pressure on the run-time performance, as it is a
+serial pasuing collector.
 
-EXAMPLE
+To address this issue (without modifying the underlying framework nor
+the GC), we propose to use a stackful interpreter to decrease the
+continuation allocations on the heap. The stackful interpreter here is
+a simple recursive interpreter for evaluating Racket forms, which is
+translated by the RPython framework into a recursive C program that
+uses the native stack. Recall that, however, the Pycket's interpreter
+is based on the CEK machine, and the heap allocated explicit
+continuations makes it very convenient to implement complex control
+operations with continuations (as well as the proper handling of
+tail-calls). Therefore the proposed approach is to use a stackful
+interpreter \emph{alongside} the CEK, rather than replacing the
+current CEK with a stackful interpreter. The idea is to use the stack
+and heap in balance to decrease the GC pressure and take advantage of
+using the stack, such as rapid allocations, locality etc.
 
+Using the stack to implement a language like Racket, however,
+understandibly introduces some challenges regarding the stack
+management, such as handling overflows due to arbitrarily deep
+recursion. Additionally, implementing a stackful interpreter on Pyket
+for the entire Racket would be illogical, since it would not only
+require implementing everything from scratch including the
+continuations, but also not benefit from the current CEK's
+performance. Therefore the logical approach is to use the two
+interpreters together, repeatedly switch between the two whenever
+appropriate, making sure that the switches don't induce a high
+performance overhead.
 
-Here's how introducing another interpreter that uses the stack might
-help with the heap (therefore solving the GC pressure issue).
+%% In order to first validate our hypothesis that there are cases where
+%% the stackful performs better than the CEK, we 
 
-- typeset the judgment rules for stackful interpeter
+%% Here's how introducing another interpreter that uses the stack might
+%% help with the heap (therefore solving the GC pressure issue).
+
+%% - typeset the judgment rules for stackful interpeter
 
 - preliminary experiments, where CEK+stackful performs better than
 just CEK
