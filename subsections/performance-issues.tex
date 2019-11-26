@@ -32,9 +32,9 @@ and some of the rules are removed for space.
 
 \begin{figure}[h!]
   %\vspace{-0.5cm}
-\footnotesize
-\begin{lstlisting}[mathescape,escapechar=\%]
-
+  \footnotesize
+  \begin{mdframed}
+\begin{lstlisting}[mathescape,escapechar=\%,language=lisp]
 a 	Matches the specified character literal          q       q
 * 	Matches 0 or more of the previous character      a*      "", a, aa, aaa
 . 	Matches any character literal                    .       a, b, c, d, e ...
@@ -64,6 +64,7 @@ a 	Matches the specified character literal          q       q
                (match-pat pattern 0 str i '()))])])
     (and m (list (list->string (reverse m))))))
 \end{lstlisting}
+\end{mdframed}
 \caption{A simple regular expression matcher (some cases are removed for space).}
 \label{fig:regexp}
 \end{figure}
@@ -153,16 +154,6 @@ linklet layer (since nothing has changed in the back-end), these large
 programs that are now runnable on Pycket aggravate these issues
 observed before.
 
-Additionally, as we described in \secref{subsec:pycket}, given a
-Racket module, Pycket now first runs the expander to fully expand the
-module before running it. Since the expansion of a given Racket module
-is included in Pycket's run-time, the JIT suffers from a large number
-of heap allocations for the continuation chains often caused by the
-control indirections within the macro-system. This, in turn, creates a
-pressure for the garbage collection, as the GC is triggered by
-allocations. Next I will study the solution approaches for these
-issues, which will be the main contributions of my thesis.
-
 %% As discussed in \secref{subsec:rpython}, a trace is generated in a
 %% meta-tracing framework by accompanying an interpreter while it is
 %% evaluating a program and detecting hot-loops. During this process, the
@@ -193,6 +184,10 @@ levels of indirection. These approaches together are proven to be very
 effective in tracing code with a heavy use of shared control-flow
 indirections, such as the contract system \cite{pycket15,pycket17}.
 
+The reason that we chose the regular expression matcher as an example
+in \figref{fig:regexp} is that Pycket already has an efficient regexp
+implementation in RPython to compare against.
+
 The ideal trace that we would like to see for the program in
 \figref{fig:branchy} would consists of a single sequence of side-exits
 (guards) for all the conditions to dispatch into the corresponding
@@ -208,6 +203,17 @@ etc. (regexp stuff)
 - show how to make the regexp implementation faster and explain.
 
 ===========================================================
+
+Additionally, as we described in \secref{subsec:pycket}, given a
+Racket module, Pycket now first runs the expander to fully expand the
+module before running it. Since the expansion of a given Racket module
+is included in Pycket's run-time, the JIT suffers from a large number
+of heap allocations for the continuation chains often caused by the
+control indirections within the macro-system. This, in turn, creates a
+pressure for the garbage collection, as the GC is triggered by
+allocations. Next I will study the solution approaches for these
+issues, which will be the main contributions of my thesis.
+
 
 The second issue that we identified as one of the essential problems
 in self-hosting Racket on meta-traced CEK is the GC pressure caused by
