@@ -202,27 +202,23 @@ etc. (regexp stuff)
 
 - show how to make the regexp implementation faster and explain.
 
-===========================================================
-
-Additionally, as we described in \secref{subsec:pycket}, given a
-Racket module, Pycket now first runs the expander to fully expand the
-module before running it. Since the expansion of a given Racket module
-is included in Pycket's run-time, the JIT suffers from a large number
-of heap allocations for the continuation chains often caused by the
-control indirections within the macro-system. This, in turn, creates a
-pressure for the garbage collection, as the GC is triggered by
-allocations. Next I will study the solution approaches for these
-issues, which will be the main contributions of my thesis.
-
+\subsubsection{Garbage Collection (GC) Pressure}
 
 The second issue that we identified as one of the essential problems
 in self-hosting Racket on meta-traced CEK is the GC pressure caused by
-the long chains of continuation allocations on the heap. To understand
-the issue better, we start by briefly describing the GC utilized by
-the RPython framework.
+the long chains of continuation allocations on the heap. As we
+described in \secref{subsec:pycket}, given a Racket module, Pycket now
+first runs the expander to fully expand the module before running
+it. Since the expansion of a given Racket module is included in
+Pycket's run-time, the JIT suffers from a large number of heap
+allocations for the continuation chains often caused by the control
+indirections within the macro-system. This, in turn, creates a
+pressure for the garbage collection, as the GC is triggered by
+allocations. To understand the issue better, we start by briefly
+describing the GC utilized by the RPython framework.
 
-As briefly described in \secref{subsec:rpython}, the flow graphs and
-the C code that are generated during the translation in the RPython
+As described in \secref{subsec:rpython}, the flow graphs and the C
+code that are generated during the translation in the RPython
 framework assume automatic memory management. Therefore the produced
 program is linked with a GC that is implemented within the framework
 (in RPython), by inspecting all the graphs and turning all
@@ -311,6 +307,30 @@ interpreters together, repeatedly switch between the two whenever
 appropriate, making sure that the switches don't induce a high
 performance overhead.
 
+One of the most fundamental points here is the interaction between the
+two interpreters. Essentially, we want to use the stack to save some
+heap space (thereby reducing the GC pressure) and take advantage of
+faster allocations and locality. On the other hand, however, we don't
+want to lose the benefits of the JIT's performance optimizations on
+the CEK. Moreover, the stack management needs to be on point to avoid
+problems such as switching back to the CEK while the stack is very
+deep (e.g. stack overflow), since that would require allocating enough
+continuations on the heap to counterbalance the performance benefit we
+get from using the stackful interpreter in the first place.
+
+To understand this problem better and to work on a simpler setup, I
+developed a formalism that includes both the CEK machine and the
+stackful interpreter evaluating a very simple subset of Racket
+together. First I will briefly introduce the formalism, and then
+discuss the real implementation on Pycket, as well as a preliminary
+experiment to justify the idea.
+
+- Formalism
+
+- Pycket implementation
+
+- experiment
+
 %% In order to first validate our hypothesis that there are cases where
 %% the stackful performs better than the CEK, we 
 
@@ -318,6 +338,3 @@ performance overhead.
 %% help with the heap (therefore solving the GC pressure issue).
 
 %% - typeset the judgment rules for stackful interpeter
-
-- preliminary experiments, where CEK+stackful performs better than
-just CEK
