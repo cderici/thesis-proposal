@@ -4,14 +4,14 @@ implementation on a meta-tracing framework and argues that a
 competitive performance is achievable.
 
 I will start by discussing how meta-tracing enables rapid prototyping
-efficient dynamic language implementations. To establish the backbone
-of our further discussion, we will discuss the use of interpreter
-hints in meta-tracing to allow discovering and tracing the loops in a
-user program, rather than in the interpeter evaluating it. I will also
-discuss how meta-tracing is shown to make a fast Racket interpreter,
-namely Pycket.
+of efficient dynamic language implementations. To establish the
+backbone of our further discussion, we will discuss the use of
+interpreter hints in meta-tracing to allow discovering and tracing the
+loops in a user program, rather than in the interpeter evaluating
+it. I will also discuss how meta-tracing makes a fast Racket
+interpreter, namely Pycket.
 
-Next I will introduce the linklets to study how Racket made its
+Next I will introduce the linklet form to study how Racket made its
 implementation more independent from the run-time, thereby achieving a
 greater flexibility to target different virtual machines. I will
 develop a formal model of linklets to investigate how they work, and
