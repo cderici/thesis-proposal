@@ -1,28 +1,53 @@
-\newpage
+%\newpage
 
 \section{Related Work}
 \label{sec:related}
 
+\paragraph{Higher-order dynamic VMs}
+Dynamic VM implementations are becoming increasingly popular for their
+rapid prototyping potential, as the effort required to implement a new
+VM from scratch is often quite large. Therefore, instead of manually
+implementing a VM in a low-level language such as C, it is often
+argued that building on top of an existing object-oriented
+general-purpose VMs or dynamic integration via generating a VM using a
+"specification" of a language allows easier and more maintainable
+implementations with competitive performance
+\cite{bolz_how_no:07}. One of the major actors for the former approach
+is the \emph{GraalVM}, which is a modified version of the Java HotSpot
+VM on the JVM (Java Virtual Machine). GraalVM uses a language
+implementation framework called Truffle, and a method-based JIT
+compiler called Graal to implement VMs on the JVM for dynamic
+languages such as Javascript, Ruby and Python \cite{graal:13}. As
+opposed to building on top of VM, the \emph{RPython} project
+introduced the idea of automatically generating a VM from a language
+specification represented as an interpreter via meta-tracing
+\cite{rpython07}. For example, as mentioned in the introduction, PyPy
+is an implementation of Python that is built on the RPython
+meta-tracing framework that generated a VM including a tracing JIT for
+Python with a better performance than the CPython itself.
 
-pypy \cite{rpython07}
 
-graal \cite{graal:13}
+% a head-to-head comparison difficult or impossible.
+
+%% To the best of our knowledge, no comprehensive synthesis of issues and
+%% opportunities has been done.
+
 
 \cite{bolz15-meta-vm} stated that in general-purpose object-oriented
-VMs, the compiler is op- timized for the language, or group of
-languages, it was de- signed for. If a language’s semantics are
-significantly differ- ent and thus do not fit the VM well, it will
+VMs, the compiler is optimized for the language, or group of
+languages, it was designed for. If a language’s semantics are
+significantly different and thus do not fit the VM well, it will
 perform poorly— despite a highly optimized underlying VM.
-
 
 \cite{ast:12} argues that AST interpreters allow for much more
 extensive modifications.
 
-\cite{branch-predict:03} optimizing indirect branch prediction accuracy in VM interpreters
+\cite{branch-predict:03} optimizing indirect branch prediction
+accuracy in VM interpreters
 
 Virtual machine showdown: Stack versus registers.
 
-Another approach is to add support for dynamic lan- guages to an
+Another approach is to add support for dynamic languages to an
 existing high-performance static-language VM \cite{stJITdyn:12,
   dynStatComp:12}.
 
