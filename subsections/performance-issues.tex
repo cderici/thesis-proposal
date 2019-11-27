@@ -236,34 +236,6 @@ the amount of live objects that are used by the program fits in the
 nursery (set to be the size of CPU Level 2 cache). \cite{pypy06,
   bolz:14, gc:16, gc:12}
 
-\begin{wrapfigure}[19]{l}{0.5\textwidth}
-  \vspace{-0.5cm}
-\small
-\begin{lstlisting}[mathescape]
-(define (branchy lst)
-  (letrec
-    ([loop
-      (lambda (lst)
-        (let ([index (if (null? lst) 3 (car lst))])
-          (if (null? lst)
-              -1
-              (if (< index 3)
-                  (if (< index 2)
-                      (loop (cdr lst))
-                      (loop (cdr lst)))
-                  (if (< index 5)
-                      (if (< index 4)
-                          (+ 3 (loop (cdr lst)))
-                          (+ 5 (loop (cdr lst))))
-                      (if (< index 6)
-                          (loop (cdr lst))
-                          (+ 1 (loop (cdr lst)))))))))])
-   (loop lst)))
-\end{lstlisting}
-\caption{A simple program with non-trivial control flow.}
-\label{fig:branchy}
-\end{wrapfigure}
-
 Now that the Racket's expander is used to expand a given module within
 the Pycket's run-time, the life in the heap is much different than
 what a generational GC would like to see. The allocated objects are
@@ -321,20 +293,59 @@ get from using the stackful interpreter in the first place.
 To understand this problem better and to work on a simpler setup, I
 developed a formalism that includes both the CEK machine and the
 stackful interpreter evaluating a very simple subset of Racket
-together. First I will briefly introduce the formalism, and then
-discuss the real implementation on Pycket, as well as a preliminary
-experiment to justify the idea.
+together. [FIXME: Figure asdasd] shows the language we're working on, which
+is similar to the Racket Core language used in
+\secref{subsec:linklets-semantics} minus the forms for the linklet
+variables, plus additional continuations for the CEK and
+\racketcode{convert} forms for controlling the interpreter switches
+from the source level. [FIXME: Figure cek-switch-stack] shows the overview of
+the interaction between the two models. We can start with either of
+the interpreters and switch back and forth between them using the
+\racketcode{convert} forms.
 
-- Formalism
+\begin{itemize}
+\item Example switch from cek to stackful
+\item Example switch from stackful to cek
+\end{itemize}
 
-- Pycket implementation
+[FIXME: The bound on the stack and the heap]
 
-- experiment
+[FIXME: The implementation]
 
-%% In order to first validate our hypothesis that there are cases where
-%% the stackful performs better than the CEK, we 
+\begin{itemize}
+\item trampoline
+\item switch on overflow
+\item primitives
+\item switch on higher-order calls
+\item entry is still cek
+\end{itemize}
 
-%% Here's how introducing another interpreter that uses the stack might
-%% help with the heap (therefore solving the GC pressure issue).
+[FIXME: Experiment]
 
-%% - typeset the judgment rules for stackful interpeter
+\begin{wrapfigure}[19]{l}{0.5\textwidth}
+  \vspace{-0.5cm}
+\small
+\begin{lstlisting}[mathescape]
+(define (branchy lst)
+  (letrec
+    ([loop
+      (lambda (lst)
+        (let ([index (if (null? lst) 3 (car lst))])
+          (if (null? lst)
+              -1
+              (if (< index 3)
+                  (if (< index 2)
+                      (loop (cdr lst))
+                      (loop (cdr lst)))
+                  (if (< index 5)
+                      (if (< index 4)
+                          (+ 3 (loop (cdr lst)))
+                          (+ 5 (loop (cdr lst))))
+                      (if (< index 6)
+                          (loop (cdr lst))
+                          (+ 1 (loop (cdr lst)))))))))])
+   (loop lst)))
+\end{lstlisting}
+\caption{A simple program with non-trivial control flow.}
+\label{fig:branchy}
+\end{wrapfigure}
