@@ -24,15 +24,26 @@ specification represented as an interpreter via meta-tracing
 \cite{rpython07}. For example, as mentioned in the introduction, PyPy
 is an implementation of Python that is built on the RPython
 meta-tracing framework that generated a VM including a tracing JIT for
-Python with a better performance than the CPython itself.
+Python with a better performance than the CPython itself. In addition
+to the RPython framework, there are other meta-tracing systems as
+well, such as the SPUR, a tracing JIT compiler for CIL bytecode
+\cite{miller2004common}, meta-tracing languages that are implemented
+in C\# \cite{spur}.
 
+\paragraph{Tracing JIT VMs}
+Like PyPy, Pycket is built on the RPython meta-tracing framework as
+well, and this study tries to identify approaches on achieving
+efficient self-hosting on Pycket running a tracing JIT. Therefore it
+would be relevant to mention here some notable tracing JIT VMs
+too. Initially introduced by the Dynamo project \cite{dynamo},
+trace-based compilation is successfully utilized by many VMs including
+some commercial VMs such as Mozilla's TraceMonkey JavaScript VM
+\cite{tracemonkey}, Adobe's Tamarin ActionScript VM \cite{tamarin}, as
+well as some research VMs such as LuaJIT \cite{luajit:08}, Converge
+\cite{converge:05}, Lambdamachine \cite{lambdamachine} and PyHaskell
+\cite{pyhaskell}.
 
-% a head-to-head comparison difficult or impossible.
-
-%% To the best of our knowledge, no comprehensive synthesis of issues and
-%% opportunities has been done.
-
-
+\paragraph{VM design and performance}
 \cite{bolz15-meta-vm} stated that in general-purpose object-oriented
 VMs, the compiler is optimized for the language, or group of
 languages, it was designed for. If a language’s semantics are
@@ -51,14 +62,27 @@ Another approach is to add support for dynamic languages to an
 existing high-performance static-language VM \cite{stJITdyn:12,
   dynStatComp:12}.
 
-heap allocated continuations \cite{whatever:19, compWithContLLVM:16}
-
+\paragraph{Controlling abstraction levels}
 collapsing towers of interpreters \cite{collapse:17}
 
 Hierarchical Layering of VMs \cite{layering:09}
 
+\paragraph{Self-hosting}
 Bootstrapping a Self-hosted Research Virtual Machine for JavaScript:
 An Experience Report \cite{self-hostJSvm:11}
+
+\paragraph{heap allocated continuations}
+asdasdasd \cite{whatever:19, compWithContLLVM:16}
+
+
+
+% a head-to-head comparison difficult or impossible.
+
+%% To the best of our knowledge, no comprehensive synthesis of issues and
+%% opportunities has been done.
+
+
+
 
 % since we are not able to
 
