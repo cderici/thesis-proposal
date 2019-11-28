@@ -43,18 +43,44 @@ well as some research VMs such as LuaJIT \cite{luajit:08}, Converge
 \cite{converge:05}, Lambdamachine \cite{lambdamachine} and PyHaskell
 \cite{pyhaskell}.
 
-\paragraph{VM design and performance}
-\cite{bolz15-meta-vm} stated that in general-purpose object-oriented
-VMs, the compiler is optimized for the language, or group of
-languages, it was designed for. If a language’s semantics are
-significantly different and thus do not fit the VM well, it will
-perform poorly— despite a highly optimized underlying VM.
+\paragraph{Optimizing VM performance in a meta-tracing context}
+As we mentioned in \secref{subsec:rpython}, there are a lot of dynamic
+optimizations performed by the RPython back-end that the interpreter
+should be in sync with. There are two main approaches a VM author may
+employ to optimize such a system: \textbf{i)} improve the interpreter
+performance, \textbf{ii)} modify the interpreter to produce traces
+that are more optimizable. Both of these approaches operate on the
+interpreter, therefore the improvements should focus on the common
+patterns that are specific to the language being interpreted. For
+example, along with the general JIT improvements such as value
+promotion and edlibale functions, PyPy and Converge both focus on
+optimizing the objects, classes and modules \cite{bolz15-meta-vm}.
 
-\cite{ast:12} argues that AST interpreters allow for much more
-extensive modifications.
+\paragraph{Self-hosting}
+Additionally, Bolz and contributors state that in general-purpose VMs,
+the compiler and the language being implemented should be semantically
+in sync to achieve a good performance \cite{bolz_how_no:07,
+  runtime-feedback:11}. As we discussed in
+\secref{subsec:performance}, we study the relationship between the
+semantics of the programs common to self-hosting and the interpreter
+\& trace performance. Unfortunately, to the best of our knowledge, no
+studies of self-hosting on meta-tracing has been done so far. However,
+there are self-hosting VMs for dynamic languages, such as the Tachyon
+VM for JavaScript, which is a bootstrapping JIT compiler that is
+completely hand-coded in JavaScript and doesn't use any automatic
+generation techniques \cite{self-hostJSvm:11}. Although Tachyon is
+quite different than Pycket and bootstraps the VM itself, it uses
+control-flow graphs in SSA form, similar to Pycket. Moreover, it uses
+interesting techniques that might prove useful for Pycket as well,
+such as conditional constant propogation via abstract interpretation
+\cite{sccp:91}. Additionally, one of the major issues with
+self-hosting is interpreting an interpreter-style dispatch loops with
+complex control-flow paths. There are low-level techniques to deal
+with such control-flow issues on VMs, such as indirect branch
+prediction \cite{branch-predict:03}. However, in our case implementing
+such techniques would require modifying the underlying RPython, where
+our approach is at the language (interpreter) level.
 
-\cite{branch-predict:03} optimizing indirect branch prediction
-accuracy in VM interpreters
 
 Virtual machine showdown: Stack versus registers.
 
@@ -62,14 +88,11 @@ Another approach is to add support for dynamic languages to an
 existing high-performance static-language VM \cite{stJITdyn:12,
   dynStatComp:12}.
 
-\paragraph{Controlling abstraction levels}
+\paragraph{Managing abstraction levels}
 collapsing towers of interpreters \cite{collapse:17}
 
 Hierarchical Layering of VMs \cite{layering:09}
 
-\paragraph{Self-hosting}
-Bootstrapping a Self-hosted Research Virtual Machine for JavaScript:
-An Experience Report \cite{self-hostJSvm:11}
 
 \paragraph{heap allocated continuations}
 asdasdasd \cite{whatever:19, compWithContLLVM:16}
