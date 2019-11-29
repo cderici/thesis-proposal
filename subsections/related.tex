@@ -96,55 +96,54 @@ each-other into a compiler to remove the interpretation overhead
 meta-circular evaluator, namely Pink, to demonstrate the collapse of
 arbitrarily many levels of self-interpretation.
 
-Another related study to our own is optimizing hierarchically layered
-VMs using trace compilation, researched by Yermolovich and
-contributors \cite{layering:09}. Similar to the RPython framework,
-they propose to run a guest VM (Lua VM \cite{luajit:08}) on top of a
-host VM with a trace-based JIT compiler (Tamarin
-\cite{tamarin}). Along with optimizing the guest VM, the host VM also
-allows the guest VM to provide hints about its interpreter loop that
-can specify which parts of the guest VM should not be traced for its
-own, thereby taking into account the guest VMs workload as well.
+Another work that is relevant to our investigation is optimizing
+hierarchically layered VMs using trace compilation, researched by
+Yermolovich and contributors \cite{layering:09}. Similar to the
+RPython framework, they propose to run a guest VM (Lua VM
+\cite{luajit:08}) on top of a host VM with a trace-based JIT compiler
+(Tamarin \cite{tamarin}). Along with optimizing the guest VM, the host
+VM also allows the guest VM to provide hints about its interpreter
+loop that can specify which parts of the guest VM should not be traced
+for its own, thereby taking into account the guest VMs workload as
+well.
 
 \paragraph{Space concerns \& heap allocated continuations}
-Virtual machine showdown: Stack versus registers.
+Many studies investigate the space complexity and optimizations aiming
+to increase performance. Some use \emph{repurposed} JIT compilers
+(RJIT) to benefit from the optimizations that the dynamic languages
+enable, such simplification of control-flow graphs
+\cite{dynStatComp:12} and run-time type feedbacks \cite{stJITdyn:12}
+in the context of adding support for dynamic languages to an existing
+static-language VMs. Others use higher-level techniques such as
+hidden-classes in Pycket \cite{pycket17}, similar to the maps
+introduced by Self \cite{self-maps:89} and used by PyPy
+\cite{runtime-feedback:11}.
 
-Another approach is to add support for dynamic languages to an
-existing high-performance static-language VM \cite{stJITdyn:12,
-  dynStatComp:12}.
+As we discussed in the performance section, one of the big concerns we
+identified in self-hosting is the garbage collection overhead caused
+by the long-chains of heap allocated continuations. Allocating
+activation records on the heap is studied extensively in the context
+of compiling with \cite{comp-cont:07} or without
+\cite{comp-without-cont:17} continuations \cite{whatever:19,
+  compWithContLLVM:16}. With that said, perhaps the most relevant work
+to our investigation with the stackful and CEK interpreters working
+together is by Hieb and contributors \cite{cont-heap-stack:90}, where
+they provide an approach to allocate activation records on the stack
+that doesn't require the stack to be copied when a continuation is
+created, thereby establishing an upper bound on the amount of copying
+which is otherwise unbounded. They also provide techniques for stack
+overflow/underflow recovery, which is isomorphic to continuation
+creation and re-instantiation.
 
-asdasdasd \cite{whatever:19, compWithContLLVM:16}
+To the best of our knowledge, no comprehensive synthesis of issues and
+opportunities of self-hosting on a meta-tracing VM has been
+done. Therefore a head-to-head comparison of Pycket with such a system
+is impossible. However, existing Racket implementations such as
+Racket's previous (generic JIT-based) and current (Chez
+\cite{racket-on-chez-19}) run-time are suitable for performance
+comparison with Pycket hosting Racket.
 
 
-
-% a head-to-head comparison difficult or impossible.
-
-%% To the best of our knowledge, no comprehensive synthesis of issues and
-%% opportunities has been done.
-
-
-
-
-% since we are not able to
-
-%% Bilmemne et al presents ..... In contrast to Pycket, in this system
-%% ..... However, Pycket does not .....
-
-%% \paragraph{just description}
-%% Occurrence Typing Occurrence typing [43, 42] extends the type system
-%% with a proposition environment that represents the information on the
-%% types of bindings down conditional branches. These propositions are
-%% then used to update the types associated with bindings in the type
-%% environment down branches so binding occurrences are given different
-%% types depending on the branches they appear in, and the conditionals
-%% that lead to that branch.
-
-% Notably, they further perform a qualitative analysis aiming to
-% identify the reasons why
-
-% There are other works that are relevant to our investigations of ....
-
-% one sentence
 
 % What's diff about TC from the related work
 % small summary for diesel....
