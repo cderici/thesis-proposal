@@ -45,19 +45,20 @@ well as some research VMs such as LuaJIT \cite{luajit:08}, Converge
 
 \paragraph{Optimizing VM performance in a meta-tracing context}
 As we mentioned in \secref{subsec:rpython}, there are a lot of dynamic
-optimizations performed by the RPython back-end that the interpreter
-should be in sync with. There are two main approaches a VM author may
-employ to optimize such a system: \textbf{i)} improve the interpreter
-performance, \textbf{ii)} modify the interpreter to produce traces
-that are more optimizable. Both of these approaches operate on the
-interpreter, therefore the improvements should focus on the common
-patterns that are specific to the language being interpreted. For
-example, along with the general JIT improvements such as value
-promotion and edlibale functions, PyPy and Converge both focus on
-optimizing the objects, classes and modules \cite{bolz15-meta-vm}.
+optimizations performed by the RPython back-end that the language
+interpreter should be in sync with. There are two main approaches for
+a VM author to optimize such a system: \textbf{i)} improve the
+interpreter performance, \textbf{ii)} modify the interpreter to
+produce traces that are easier to optimize by JIT. Both of these
+approaches operate on the interpreter, therefore the improvements
+should focus on the common patterns that are specific to the language
+being interpreted. For example, along with the general JIT
+improvements such as value promotion and edlibale functions, PyPy and
+Converge both focus on optimizing the objects, classes and modules
+\cite{bolz15-meta-vm}.
 
 \paragraph{Self-hosting}
-Additionally, Bolz and contributors state that in general-purpose VMs,
+Similarly, Bolz and contributors state that in general-purpose VMs,
 the compiler and the language being implemented should be semantically
 in sync to achieve a good performance \cite{bolz_how_no:07,
   runtime-feedback:11}. As we discussed in
@@ -70,31 +71,48 @@ VM for JavaScript, which is a bootstrapping JIT compiler that is
 completely hand-coded in JavaScript and doesn't use any automatic
 generation techniques \cite{self-hostJSvm:11}. Although Tachyon is
 quite different than Pycket and bootstraps the VM itself, it uses
-control-flow graphs in SSA form, similar to Pycket. Moreover, it uses
-interesting techniques that might prove useful for Pycket as well,
-such as conditional constant propogation via abstract interpretation
-\cite{sccp:91}. Additionally, one of the major issues with
-self-hosting is interpreting an interpreter-style dispatch loops with
-complex control-flow paths. There are low-level techniques to deal
-with such control-flow issues on VMs, such as indirect branch
-prediction \cite{branch-predict:03}. However, in our case implementing
-such techniques would require modifying the underlying RPython, where
-our approach is at the language (interpreter) level.
+control-flow graphs in SSA form as an intermediate representation
+(IR), similar to Pycket. Moreover, it uses interesting techniques that
+might prove useful for Pycket as well, such as conditional constant
+propogation via abstract interpretation \cite{sccp:91}. Additionally,
+there are low-level techniques to deal with control-flow issues on VMs
+caused by large amount of branches, such as indirect branch prediction
+\cite{branch-predict:03}, which might be adapted to be useful in
+tracing as well. However, in our case implementing such techniques
+would require modifying the underlying RPython framework, where our
+approach is at the language (interpreter) level.
 
+\paragraph{Managing abstraction levels}
+A big part of the problems we tackle in this thesis is caused by the
+fact that adding self-hosting on Pycket adds another level of
+abstraction that needs to be semantically in-sync with the run-time
+meta-tracing VM. There has been related research studying to reduce
+complexity in systems involving multiple levels of abstractions, such
+as type-directed partial evaluation \cite{tdpe:99} and multi-stage
+programming \cite{multi-stage:97, multi-stage:17}. Amin and Rompf
+studied how to collapse a tower of interpreters interpreting
+each-other into a compiler to remove the interpretation overhead
+\cite{collapse:17}. They developed a multi-level lambda calculus and a
+meta-circular evaluator, namely Pink, to demonstrate the collapse of
+arbitrarily many levels of self-interpretation.
 
+Another related study to our own is optimizing hierarchically layered
+VMs using trace compilation, researched by Yermolovich and
+contributors \cite{layering:09}. Similar to the RPython framework,
+they propose to run a guest VM (Lua VM \cite{luajit:08}) on top of a
+host VM with a trace-based JIT compiler (Tamarin
+\cite{tamarin}). Along with optimizing the guest VM, the host VM also
+allows the guest VM to provide hints about its interpreter loop that
+can specify which parts of the guest VM should not be traced for its
+own, thereby taking into account the guest VMs workload as well.
+
+\paragraph{Space concerns \& heap allocated continuations}
 Virtual machine showdown: Stack versus registers.
 
 Another approach is to add support for dynamic languages to an
 existing high-performance static-language VM \cite{stJITdyn:12,
   dynStatComp:12}.
 
-\paragraph{Managing abstraction levels}
-collapsing towers of interpreters \cite{collapse:17}
-
-Hierarchical Layering of VMs \cite{layering:09}
-
-
-\paragraph{heap allocated continuations}
 asdasdasd \cite{whatever:19, compWithContLLVM:16}
 
 
