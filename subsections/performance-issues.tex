@@ -169,7 +169,7 @@ observed before.
 %% meta-traced:
 
 \begin{wrapfigure}[26]{r}{0.40\textwidth}
-    \vspace{-0.5cm}
+    \vspace{-0.3cm}
     \centering
     \begin{minipage}[t]{0.38\textwidth}
       \begin{minted}[numbersep=0pt,gobble=0,linenos,numbers=right,fontsize=\scriptsize,frame=lines]{python}
@@ -247,21 +247,97 @@ to use the \racketcode{reg-match} in instead of the
 observe 2x slowdown on the simple implementation. Part of the reason
 is the use of clever techniques that are specific to the regexp
 implementation on RPython such as caching and using contexts etc. The
-bigger part of the problem, however, is the generated traces for this
-computation.
+bigger part of the problem, however, lies in the difference between
+the traces that are generated for this computation.
 
 The gist of this computation is the literal search in the string for
 the \racketcode{"defg"} pattern. As can be seen in
 \figref{fig:regexp-trace}, this is captured in a tight loop in the
-main trace for the RPython implementation. The RPython implementation
-utilizes interpreter hints to control the unrolling and encourages
-allocation removal optimizations through type specializations. The
-trace we get for the Racket implementation for the same program is
-quite large due to aggressive inlining comes with tracing and includes
-large amounts of allocation/deallocation. For space concerns in this
-document we defer presenting the large traces to the dissertation.
+main trace for the RPython implementation. The RPython regexp
+implementation utilizes interpreter hints to control the unrolling and
+encourages the allocation removal optimizations through type
+specializations. On the other hand, tThe trace we get for the Racket
+implementation for the same program is quite large due to aggressive
+inlining comes with tracing and includes large amounts of
+allocation/deallocation. For space concerns in this document we defer
+presenting the large traces to the dissertation.
 
+The main issue here is that any functionality that Pycket now imports
+and runs as Racket code, normally would've been implemented on the
+language interpreter in RPython and optimized using the interpreter
+hints that the RPython framework provides for interpreter authors,
+such as the regexp implementation. However, since it now evaluates
+Racket code to extend the functionalities of the interpreter, it is
+unable to use the hints to optimize the implementation on the JIT. In
+other words, what gives Pycket the extendability at the language level
+via importing implementations as Racket code also cripples it by
+preventing the use of the interpreter hints that allow the language
+interpreter to communicate with the tracing interpreter (i.e. the JIT)
+to generate optimal traces.
 
+To address this, we propose to develop and use the
+\emph{meta-hints}. Meta-hints is a generalization of the RPython
+interpreter hints that extends further the communication between the
+language being implemented and the tracing-JIT run-time. Recall from
+\secref{subsec:rpython}, a language interpreter written in RPython can
+utilize a \verb|JitDriver| reflection provided by the RPython
+framework to define its own "program counter" and use hints such as
+\verb|jit_merge_point| and \verb|can_enter_jit| to indicate a starting
+point for a trace and where the interpreter might perform a backwards
+jump, respectively. An example can be seen in
+\figref{fig:rpython-interp} in \secref{subsec:rpython}.
+
+Recall that the Pycket's interpreter uses the two-state tracking to
+determine the trace header as a pair of a lambda AST form and its
+call-site. In its original form in \figref{fig:regexp} (without the
+meta-hints), in order for a trace to be formed for one of the looping
+points in the \verb|match-pat| function, the input needs to go into
+the same branch enough times to make that branch "hot". Therefore,
+until it becomes hot, the tracer continues to trace through the jumps,
+landing in the same lambda, but passing through the different branches
+along the way (because the input doesn't necessarily go into the same
+branch everytime). By the time that a particular branch becomes hot,
+the traced instructions often contain codes for the other branches as
+well, generating a large and convoluted trace.
+
+\begin{figure}[h!]
+  %\vspace{-0.5cm}
+  \footnotesize
+  \begin{mdframed}
+\begin{lstlisting}[mathescape,escapechar=\%,language=lisp]
+(%\underline{define/with-meta-hints}% (match-pat pattern p-pos str s-pos m)
+  (cond
+    [(>= p-pos (string-length pattern)) m]
+    [(and (< (+ p-pos 1) (string-length pattern)) (char=? (string-ref pattern (+ p-pos 1)) #\*))
+      (match-star pattern p-pos str s-pos (+ p-pos 1) m)]
+    [(char=? (string-ref pattern p-pos) #\.)
+      (and (< s-pos (string-length str))
+            (%\underline{can-enter-jit}% (match-pat pattern (add1 p-pos) str (add1 s-pos) (cons (string-ref str s-pos) m))))]
+    [else
+     (and (char=? (string-ref pattern p-pos) (string-ref str s-pos))
+           (%\underline{can-enter-jit}% (match-pat pattern (add1 p-pos) str (add1 s-pos) (cons (string-ref str s-pos) m))))]))
+\end{lstlisting}
+\end{mdframed}
+\caption{Regexp dispatch loop with meta-hint annotations.}
+\label{fig:annotated-regexp}
+\end{figure}
+
+The meta-hints approach aim to solve this problem by allowing the
+RPython hints to be dynamically changed or added via the source
+program. For example, \figref{fig:annotated-regexp} shows the main
+dispatch-loop of the regexp implementation in \figref{fig:regexp},
+annotated with meta-hints to dynamically modify Pycket's interpreter's
+way of tracking the program state. With these annotations supported by
+the language interpreter (possibly through primitives that internally
+modify the AST states), the tracer knows that a point might be a
+backwards jump and stops tracing further\footnote{Pycket's hints in
+  the interpreter code would allow it to go further} and only
+considers the path from the body entry through a particular branch to
+the looping call. Note that the input is still a non-repetitive
+sequence of data, so the tracer will still go in different branches at
+each step. However, when a path for a branch becomes hot, the
+generated trace will contain only the codes for that particular path,
+thereby producing a tight and concise loop for that single branch.
 
 %% \begin{wrapfigure}[26]{r}{0.40\textwidth}
 %%     \vspace{-0.5cm}
@@ -351,10 +427,10 @@ document we defer presenting the large traces to the dissertation.
 %%     \label{fig:regexp-trace}
 %%   \end{wrapfigure}
 
-Here's how we can solve the issue of tracing branchy code, meta-hints
-etc. (regexp stuff)
+%% Here's how we can solve the issue of tracing branchy code, meta-hints
+%% etc. (regexp stuff)
 
-- show how to make the regexp implementation faster and explain.
+%% - show how to make the regexp implementation faster and explain.
 
 \subsubsection{Garbage Collection (GC) Pressure}
 
