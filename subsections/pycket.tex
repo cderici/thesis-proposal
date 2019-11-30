@@ -1,18 +1,16 @@
 \subsection{Making Pycket an Independent Self-Hosting Racket}
 \label{subsec:pycket}
 
-Pycket is first designed in 2014 as a high-performance JIT compiler
-for Racket, generated using the RPython meta-tracing framework
-\cite{bolz14-racket}. The language interpreter is based on the CEK
-abstract machine and has the state $\langle e, \rho, \kappa \rangle$ ($e$ : control
-(program AST), $\rho$ : environment, $\kappa$ : continuation)
-\cite{felleisen87}. \figref{fig:cek} shows the transition rules and
-how the CEK-loop is implemented in Pycket. The interpreter loop
-continuously reduces the CEK triple until an empty continuation is
-reached, which triggers a \emph{Done} exception that returns the
-results.
-
 \begin{figure}[h!]
+  \centering \includegraphics[scale=0.3]{img/old-pycket-2}
+\caption{Pycket used to run Racket's executable to fully expand a given module before running it.}
+\label{fig:old-pycket}
+\end{figure}
+
+
+\begin{wrapfigure}[15]{r}{0.42\textwidth}
+  \vspace{-0.8cm}
+%\begin{figure}[h!]
   \small
 \begin{align*}
 e &::= x \mid \lambda x.\, e \mid e \; e\\
@@ -29,15 +27,28 @@ e &::= x \mid \lambda x.\, e \mid e \; e\\
     \langle e, \rho'[x\mapsto v], \kappa \rangle
 \end{align*}
 \begin{lstlisting}[mathescape]
-                                    try:
-                                      while True:
-                                        ast, env, cont = ast.interpret(env, cont)
-                                    except Done, e:
-                                      return e.values
+try:
+  while True:
+    ast, env, cont = ast.interpret(env, cont)
+except Done, e:
+  return e.values
 \end{lstlisting}
-\caption{The CEK Machine transitions and the loop in Pycket. Figure taken from \cite{pycket15}.}
+\caption{The CEK machine and the loop in Pycket. Figure taken from \cite{pycket15}.}
 \label{fig:cek}
-\end{figure}
+%\end{figure}
+\end{wrapfigure}
+
+
+Pycket is first designed in 2014 as a high-performance JIT compiler
+for Racket, generated using the RPython meta-tracing framework
+\cite{bolz14-racket}. The language interpreter is based on the CEK
+abstract machine and has the state $\langle e, \rho, \kappa \rangle$ ($e$ : control
+(program AST), $\rho$ : environment, $\kappa$ : continuation)
+\cite{felleisen87}. \figref{fig:cek} shows the transition rules and
+how the CEK-loop is implemented in Pycket. The interpreter loop
+continuously reduces the CEK triple until an empty continuation is
+reached, which triggers a \emph{Done} exception that returns the
+results.
 
 In its original design, as shown in \figref{fig:old-pycket}, Pycket
 relies on the Racket executable to read and fully expand a given
@@ -46,12 +57,6 @@ evaluates it within the interpreter loop \cite{pycket15}. Exploiting
 the increased portability in Racket, here we turn the Pycket from
 being a rudimentary compiler to an actual implementation of Racket,
 independent of the Racket executable.
-
-\begin{figure}[h!]
-  \centering \includegraphics[scale=0.3]{img/old-pycket-2}
-\caption{Pycket used to run Racket's executable to fully expand a given module before running it.}
-\label{fig:old-pycket}
-\end{figure}
 
 First step is building the \emph{linklets} layer by implementing the
 \emph{compile-linklet} and \emph{instantiate-linklet} functions in
@@ -92,9 +97,9 @@ they need).
 As we described in \secref{subsec:racket-expand}, the expander linklet
 is generated offline by running the expander on itself using the
 Racket's executable, and serialized as an s-expression. Pycket, then
-reads this s-expression and runs \verb|compile-linklet| to produce a
+reads this s-expression and runs \racketcode{compile-linklet} to produce a
 linklet object, which is then instantiated using the
-\verb|instantiate-linklet|, and the functions from the expander
+\racketcode{instantiate-linklet}, and the functions from the expander
 linklet is load into the run-time. At this point, Pycket has all the
 functionalities implemented and exported by the expander, such as
 read, expand, eval etc., in its run-time to call.
@@ -123,7 +128,7 @@ handles the setup to call Racket functions within the CEK loop.
     result = eval.call_racket([r_expanded, ...])
     print(result)
 \end{minted}
-\caption{hede}
+\caption{A simple top-level REPL via expander functions on Pycket}
 \label{fig:repl-rpython}
 \end{wrapfigure}
 
@@ -133,7 +138,7 @@ that are in languages built on top of Racket core, such as
 \emph{racket/base}. Therefore, instead of implementing the top-level
 repl itself, Pycket can directly run Racket's own repl, which is
 implemented as a \emph{racket/base} program, through the
-\verb|dynamic-require| function exported by the expander.
+\racketcode{dynamic-require} function exported by the expander.
 
 %\begin{minted}[numbersep=0pt,gobble=0,linenos,numbers=left,fontsize=\footnotesize,frame=lines]{python}
 {\footnotesize
@@ -171,22 +176,24 @@ contain 32 linklet related functions including the
 
 One of the essential nuances of self-hosting Racket with the expander
 linklet, is that the interaction between the run-time and the expander
-is a two-way street. The VM implements and uses \verb|compile-linklet|
-and \verb|instantiate-linklet| to import the functions provided by the
-expander, and the expander provides functions that uses the
-\verb|compile-linklet| and \verb|instantiate-linklet| functions, along
-with the other run-time primitives as well.
+is a two-way street. The VM implements and uses
+\racketcode{compile-linklet} and \racketcode{instantiate-linklet} to
+import the functions provided by the expander, and the expander
+provides functions that uses the \racketcode{compile-linklet} and
+\racketcode{instantiate-linklet} functions, along with the other
+run-time primitives as well.
 
-For example, the \verb|dynamic-require| used above (provided by the
-expander linklet) is a Racket function that dynamically loads a Racket
-module (if it's not already loaded) by resolving the module path,
-finding the source code in the file system, reading and expanding the
-codes and modifying the namespace registry. The Racket code inside the
-expander that implements all that calls run-time primitives such as
-for file-system support and also calls the \verb|compile-linklet| and
-\verb|instantiate-linklet| for expanding and instantiating all the
-required modules. Another example is the \verb|eval| function as we
-discussed in \secref{subsec:portability}.
+For example, the \racketcode{dynamic-require} used above (provided by
+the expander linklet) is a Racket function that dynamically loads a
+Racket module (if it's not already loaded) by resolving the module
+path, finding the source code in the file system, reading and
+expanding the codes and modifying the namespace registry. The Racket
+code inside the expander that implements all that calls run-time
+primitives such as for file-system support and also calls the
+\racketcode{compile-linklet} and \racketcode{instantiate-linklet} for
+expanding and instantiating all the required modules. Another example
+is the \racketcode{eval} function as we discussed in
+\secref{subsec:portability}.
 
 This intertwined nature of the high-level language facilities and the
 low-level run-time support is central to the Racket's improved
