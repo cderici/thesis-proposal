@@ -168,6 +168,54 @@ observed before.
 %% gets more complicated. Consider the following program being
 %% meta-traced:
 
+\begin{wrapfigure}[26]{r}{0.40\textwidth}
+    \vspace{-0.5cm}
+    \centering
+    \begin{minipage}[t]{0.38\textwidth}
+      \begin{minted}[numbersep=0pt,gobble=0,linenos,numbers=right,fontsize=\scriptsize,frame=lines]{python}
+# start of the trace (preamble)
+label(i0, p1, descr="124248176")
+i3 = int_add(i0, 1)
+p4 = getfield_gc_r(p1, descr="StrMatchContext.string")
+i5 = strgetitem(p4, i0)
+i7 = int_eq(i5, 100)
+guard_false(i7)
+i8 = getfield_gc_i(p1, descr="FixedMatchContext.end")
+i9 = int_lt(i3, i8)
+guard_true(i9)
+# peeled-iteration (inner loop)
+label(i3, p1, p4, i8, descr="124248256")
+i11 = int_add(i3, 1)
+i12 = strgetitem(p4, i3)
+i14 = int_eq(i12, 100)
+guard_false(i14)
+i15 = int_lt(i11, i8)
+guard_true(i15)
+# jump
+jump(i11, p1, p4, i8, descr="124248256")
+    \end{minted}
+    \end{minipage}
+    \begin{minipage}[t]{0.38\textwidth}
+      \begin{minted}[escapeinside=||,numbersep=0pt,gobble=0,linenos,numbers=right,fontsize=\scriptsize,frame=lines]{lisp}
+|#|lang racket/base
+
+(define l (make-string 4000 #\a))
+(define r (make-string 4000 #\p))
+(define str-big (string-append l "defg" r))
+
+(define reg-r (regexp "defg"))
+
+(define iter 1000000)
+
+(time
+ (for ([i (in-range iter)])
+   (regexp-match reg-r str-big)))
+    \end{minted}
+    \end{minipage}
+    \caption{\small Trace of RPython regexp matching $\mathtt{\#}$\racketcode{rx"defg"}}
+    \label{fig:regexp-trace}
+  \end{wrapfigure}
+
 To understand the issue better, it is important to first see how the
 loop detection currently works on Pycket. While for the low-level
 languages such as in a bytecode interpreter a program counter is used
@@ -186,16 +234,122 @@ indirections, such as the contract system \cite{pycket15,pycket17}.
 
 The reason that we chose the regular expression matcher as an example
 in \figref{fig:regexp} is that Pycket already has an efficient regexp
-implementation in RPython to compare against.
+implementation in RPython to compare against. As a simple experiment
+to demonstrate the issue, we run both regexp implementations (the one
+in the \figref{fig:regexp} and the RPython implementation) to match
+$\mathtt{\#}$\racketcode{rx"defg"} against a large string containing
+the sequence \racketcode{"defg"} in the middle and measure the time
+performances. \figref{fig:regexp-trace} shows both the trace we get
+from the RPython implementation and the program we run. To run the
+simple implementation in \figref{fig:regexp}, we modify this program
+to use the \racketcode{reg-match} in instead of the
+\racketcode{regexp-match}. When we run both with the same inputs, we
+observe 2x slowdown on the simple implementation. Part of the reason
+is the use of clever techniques that are specific to the regexp
+implementation on RPython such as caching and using contexts etc. The
+bigger part of the problem, however, is the generated traces for this
+computation.
 
-The ideal trace that we would like to see for the program in
-\figref{fig:branchy} would consists of a single sequence of side-exits
-(guards) for all the conditions to dispatch into the corresponding
-bridges for each branch, each of which will eventually jump back to
-the original loop. However with the current methods on Pycket, the
-loop is segmented into multiple traces where all the codes for the
-branches are inlined and each trace is specialized to a one particular
-path driven by the input data.
+The gist of this computation is the literal search in the string for
+the \racketcode{"defg"} pattern. As can be seen in
+\figref{fig:regexp-trace}, this is captured in a tight loop in the
+main trace for the RPython implementation. The RPython implementation
+utilizes interpreter hints to control the unrolling and encourages
+allocation removal optimizations through type specializations. The
+trace we get for the Racket implementation for the same program is
+quite large due to aggressive inlining comes with tracing and includes
+large amounts of allocation/deallocation. For space concerns in this
+document we defer presenting the large traces to the dissertation.
+
+
+
+%% \begin{wrapfigure}[26]{r}{0.40\textwidth}
+%%     \vspace{-0.5cm}
+%%     \centering
+%%     \begin{minipage}[t]{0.38\textwidth}
+%%       \begin{minted}[numbersep=0pt,gobble=0,linenos,numbers=right,fontsize=\scriptsize,frame=lines]{python}
+%% {jit-log-opt-loop
+%% # start of the trace (preamble)
+%% label(p0, p1, descr="108110416")
+%% guard_class(p1, BaseCont)
+%% p3 = getfield_gc_r(p1, descr="BaseCont.inst_marks")
+%% guard_nonnull_class(p3)
+%% guard_not_invalidated()
+%% guard_class(p0, ConsEnv)
+%% i6 = getfield_gc_i(p0, descr="Fixnum")
+%% p7 = getfield_gc_r(p0, descr="ConsEnv.prev")
+%% guard_class(p7, W_Closure1AsEnv)
+%% p9 = getfield_gc_r(p7, descr="W_Closure1AsEnv.caselam")
+%% guard_value(p9, ConstPtr(ptr10), descr=<Guard0x7a42920>) [p0, p1]
+%% p11 = getfield_gc_r(p7, descr=<FieldP rpython.tool.pairtype.W_Closure1AsEnvSize4.inst__vals_0 24 pure>)
+%% guard_nonnull_class(p11, ConstClass(W_Fixnum), descr=<Guard0x94588c0>) [p0, p1]
+%% i13 = getfield_gc_i(p11, descr=<FieldS pycket.values.W_Fixnum.inst_value 8 pure>)
+%% i14 = int_lt(i6, i13)
+%% guard_true(i14, descr=<Guard0x7a42968>) [p0, p1]
+%% p15 = getfield_gc_r(p0, descr=<FieldP pycket.small_list.ConsEnvSize2Fixed01.inst_w_val0 24 pure>)
+%% guard_nonnull_class(p15, ConstClass(W_Bool), descr=<Guard0x9458920>) [p0, p1]
+%% p17 = getfield_gc_r(p7, descr=<FieldP pycket.env.ConsEnv.inst__prev 8 pure>)
+%% guard_value(p17, ConstPtr(ptr18), descr=<Guard0x9458980>) [p0, p1]
+%% p20 = getfield_gc_r(ConstPtr(ptr19), descr=<FieldP pycket.values.W_Cell.inst_w_value 8>)
+%% guard_value(p20, ConstPtr(ptr21), descr=<Guard0x94589e0>) [p0, p1]
+%% p22 = getfield_gc_r(p7, descr=<FieldP rpython.tool.pairtype.W_Closure1AsEnvSize4.inst__vals_1 32 pure>)
+%% guard_nonnull_class(p22, 20067120, descr=<Guard0x9458a40>) [p0, p1]
+%% p24 = getfield_gc_r(p7, descr=<FieldP rpython.tool.pairtype.W_Closure1AsEnvSize4.inst__vals_3 48 pure>)
+%% guard_nonnull_class(p24, 20067120, descr=<Guard0x9458aa0>) [p0, p1]
+%% p26 = getfield_gc_r(p22, descr=<FieldP pycket.values_string.W_MutableString.inst_strategy 16>)
+%% guard_class(p26, 20314736, descr=<Guard0x7a429b0>) [p0, p1]
+%% p28 = getfield_gc_r(p22, descr=<FieldP pycket.values_string.W_MutableString.inst_storage 8>)
+%% i29 = arraylen_gc(p28, descr=<ArrayU 1>)
+%% i31 = int_ge(0, i29)
+%% guard_false(i31, descr=<Guard0x7a42a40>) [p0, p1]
+%% i33 = getarrayitem_gc_i(p28, 0, descr=<ArrayU 1>)
+%% i35 = int_eq(i33, 36)
+%% guard_false(i35, descr=<Guard0x7a42ad0>) [p0, p1]
+%% i37 = int_lt(1, i29)
+%% guard_true(i37, descr=<Guard0x7a42b18>) [p0, p1]
+%% i39 = getarrayitem_gc_i(p28, 1, descr=<ArrayU 1>)
+%% i41 = int_eq(i39, 63)
+%% guard_false(i41, descr=<Guard0x7a42bf0>) [p0, p1]
+%% i43 = int_eq(i39, 42)
+%% guard_false(i43, descr=<Guard0x7a42c38>) [p0, p1]
+%% i45 = int_eq(i33, 46)
+%% guard_false(i45, descr=<Guard0x7a42c80>) [p0, p1]
+%% i47 = int_ge(i6, 0)
+%% guard_true(i47, descr=<Guard0x7a42da0>) [p0, p1]
+%% p48 = getfield_gc_r(p24, descr=<FieldP pycket.values_string.W_MutableString.inst_strategy 16>)
+%% guard_class(p48, 20291800, descr=<Guard0x7a42e30>) [p0, p1]
+%% p50 = getfield_gc_r(p24, descr=<FieldP pycket.values_string.W_MutableString.inst_storage 8>)
+%% i51 = strlen(p50)
+%% i52 = int_lt(i6, i51)
+%% guard_true(i52, descr=<Guard0x7a42e78>) [p0, p1]
+%% i53 = strgetitem(p50, i6)
+%% i54 = int_eq(i33, i53)
+%% guard_false(i54, descr=<Guard0x7a42f98>) [p0, p1]
+%% p55 = getfield_gc_r(p7, descr=<FieldP rpython.tool.pairtype.W_Closure1AsEnvSize4.inst__vals_2 40 pure>)
+%% guard_nonnull_class(p55, ConstClass(W_Fixnum), descr=<Guard0x9458b00>) [p0, p1]
+%% i57 = getfield_gc_i(p55, descr=<FieldS pycket.values.W_Fixnum.inst_value 8 pure>)
+%% i58 = int_add_ovf(i6, i57)
+%% guard_no_overflow(descr=<Guard0x7a42fe0>) [p0, p1]
+%% # peeled-iteration (inner loop)
+%% label(p7, i58, p1, p3, p11, i13, p22, p28, p24, i51, p50, i33, p55, i57, descr=TargetToken(108110496))
+%% guard_not_invalidated(descr=<Guard0x9458b60>) [i58, p7, p1, p3]
+%% i59 = int_lt(i58, i13)
+%% guard_true(i59, descr=<Guard0x7a43028>) [i58, p7, p1, p3]
+%% i61 = int_ge(i58, 0)
+%% guard_true(i61, descr=<Guard0x7a43070>) [i58, p7, p1, p3]
+%% i62 = int_lt(i58, i51)
+%% guard_true(i62, descr=<Guard0x7a430b8>) [i58, p7, p1, p3]
+%% i63 = strgetitem(p50, i58)
+%% i64 = int_eq(i33, i63)
+%% guard_false(i64, descr=<Guard0x7a43100>) [i58, p7, p1, p3]
+%% i65 = int_add_ovf(i58, i57)
+%% guard_no_overflow(descr=<Guard0x7a43148>) [i58, p7, p1, p3]
+%% jump(p7, i65, p1, p3, p11, i13, p22, p28, p24, i51, p50, i33, p55, i57, descr=TargetToken(108110496))
+%%       \end{minted}
+%%     \end{minipage}
+%%     \caption{\small Trace of Racket regexp matching $\mathtt{\#}$\racketcode{rx"defg"}}
+%%     \label{fig:regexp-trace}
+%%   \end{wrapfigure}
 
 Here's how we can solve the issue of tracing branchy code, meta-hints
 etc. (regexp stuff)
@@ -279,6 +433,34 @@ interpreters together, repeatedly switch between the two whenever
 appropriate, making sure that the switches don't induce a high
 performance overhead.
 
+\begin{wrapfigure}[19]{l}{0.5\textwidth}
+  \vspace{-0.5cm}
+\small
+\begin{lstlisting}[mathescape]
+(define (branchy lst)
+  (letrec
+    ([loop
+      (lambda (lst)
+        (let ([index (if (null? lst) 3 (car lst))])
+          (if (null? lst)
+              -1
+              (if (< index 3)
+                  (if (< index 2)
+                      (loop (cdr lst))
+                      (loop (cdr lst)))
+                  (if (< index 5)
+                      (if (< index 4)
+                          (+ 3 (loop (cdr lst)))
+                          (+ 5 (loop (cdr lst))))
+                      (if (< index 6)
+                          (loop (cdr lst))
+                          (+ 1 (loop (cdr lst)))))))))])
+   (loop lst)))
+\end{lstlisting}
+\caption{A simple program with non-trivial control flow.}
+\label{fig:branchy}
+\end{wrapfigure}
+
 One of the most fundamental points here is the interaction between the
 two interpreters. Essentially, we want to use the stack to save some
 heap space (thereby reducing the GC pressure) and take advantage of
@@ -322,30 +504,8 @@ the interpreters and switch back and forth between them using the
 
 [FIXME: Experiment]
 
-\begin{wrapfigure}[19]{l}{0.5\textwidth}
-  \vspace{-0.5cm}
-\small
-\begin{lstlisting}[mathescape]
-(define (branchy lst)
-  (letrec
-    ([loop
-      (lambda (lst)
-        (let ([index (if (null? lst) 3 (car lst))])
-          (if (null? lst)
-              -1
-              (if (< index 3)
-                  (if (< index 2)
-                      (loop (cdr lst))
-                      (loop (cdr lst)))
-                  (if (< index 5)
-                      (if (< index 4)
-                          (+ 3 (loop (cdr lst)))
-                          (+ 5 (loop (cdr lst))))
-                      (if (< index 6)
-                          (loop (cdr lst))
-                          (+ 1 (loop (cdr lst)))))))))])
-   (loop lst)))
-\end{lstlisting}
-\caption{A simple program with non-trivial control flow.}
-\label{fig:branchy}
-\end{wrapfigure}
+% the performance of system is limited by their implementation depending
+
+%% Because of the limited comparison points available I seek to further
+%% character- ize the performance of space-efficient coercions as a
+%% implementation technology by comparing wi
