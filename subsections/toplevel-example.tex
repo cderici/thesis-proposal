@@ -37,10 +37,10 @@ remainder of this document we will use the names ``targeted
 instantiation'' and ``regular instantiation'' for these two modes.
 
 The minimal API for a virtual machine to implement the linklets
-consists of the functions \textbf{i)} \verb|compile-linklet| for
+consists of the functions \textbf{i)} \racketcode{compile-linklet} for
 preparing a linklet for instantiation and \textbf{ii)}
-\verb|instantiate-linklet| for running a compiled linklet. In
-particular, the VM uses the \verb|compile-linklet| to take an
+\racketcode{instantiate-linklet} for running a compiled linklet. In
+particular, the VM uses the \racketcode{compile-linklet} to take an
 s-expression for a linklet as input and produce a linklet object in a
 representation of its choice, containing the run-time AST for the
 codes inside the linklet. Therefore, loading a linklet into its
@@ -76,8 +76,8 @@ instance will be an empty instance.
 
 The key point is the interaction between the language and the run-time
 through the expander linklet. At each step in the repl, the VM gets a
-Racket expression to evaluate. It calls the expander's \verb|read| and
-\verb|expand| functions with this expression, which outputs a bundle
+Racket expression to evaluate. It calls the expander's \racketcode{read} and
+\racketcode{expand} functions with this expression, which outputs a bundle
 of linklets. For clarity, we will omit the non-essential details and
 focus only on the simplified run-time linklet for the expression.
 
@@ -86,9 +86,9 @@ Let's see what happens at each interaction:
 \paragraph{$>$ (define k (lambda () a))}
 
 As we briefly explained earlier, the VM will call the expander's
-\verb|expand| function, which will output a linklet containing (the
+\racketcode{expand} function, which will output a linklet containing (the
 expanded version of) this expression. Then the VM will use
-\verb|instantiate-linklet| to instantiate it over the \emph{top-level}
+\racketcode{instantiate-linklet} to instantiate it over the \emph{top-level}
 instance, which is initially empty.
 
 \begin{figure}[h!]
@@ -161,7 +161,7 @@ respectively.
 \paragraph{$>$ (define a 10)}
 
 When this new expression is inserted in the repl, the VM calls the
-\verb|expand| again to produce a linklet, then it compiles and
+\racketcode{expand} again to produce a linklet, then it compiles and
 instantiates it over the same \emph{top-level} target instance.
 
 \vspace{-0.5cm}
@@ -211,7 +211,7 @@ instantiates it over the same \emph{top-level} target instance.
   \end{subfigure}
 \end{figure}
 
-Note that the \verb|compile-linklet| inserted the \emph{variable-set!}
+Note that the \racketcode{compile-linklet} inserted the \emph{variable-set!}
 expression in the body to set the value of the variable bound by the
 external name "a". During the instantiation, this variable exists in
 two possible ways. When the exported variables are processed at the
