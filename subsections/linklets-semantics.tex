@@ -1,16 +1,22 @@
 \subsubsection{Operational Semantics of Linklets}
 \label{subsec:linklets-semantics}
 
-For completeness, in this section I present a formalism to study the
-operational semantics of linklets, which will be the basis of the
+In this section I present a formalism to briefly describe the
+operational semantics of linklets, which is the basis of the
 implementation on Pycket. The formalism is developed in the PLT Redex
 language, therefore it is executable
 \cite{felleisen2009semantics}. Randomized testing is used to verify
 the model \cite{random-test:2009}, and a parallel test suite is used
 to verify the Pycket implementation and the model with each other.
 
-\begin{wrapfigure}[10]{r}{0.45\textwidth}
-  \vspace{-0.5cm}
+Only the parts of the formalism that are essential to the discussion
+in this document are shown here, the presentation of the full
+formalism and the semantics are deferred to the
+dissertation. The \racketcode{...} in the figures represent the
+omitted rules.
+
+\begin{wrapfigure}[14]{r}{0.45\textwidth}
+  \vspace{-0.7cm}
   \footnotesize
 %\begin{figure}[h!]
   \begin{mdframed}
@@ -18,7 +24,13 @@ to verify the Pycket implementation and the model with each other.
       L  &::= (\textbf{linklet}\:((imp\: \ldots)\: \ldots)\:(exp\: \ldots)\:l\dash top\:\ldots\:e)\\
       l\dash top &::= (\textbf{define\dash values}\:(x)\:e)\:|\:e \\
       imp &::= x\:|\:(x x) \tag*{[external internal]}\\
-      exp &::= x\:|\:(x x) \tag*{[internal external]}
+      exp &::= x\:|\:(x x) \tag*{[internal external]} \\
+      e &::=\; x\; |\; v\; |\; (e\; e\; \ldots)\; |\; (\textbf{if}\; e\; e\; e)\; |\; (o\; e\; e)\; \\
+      \; &|\; (\textbf{begin}\; e\; e\; \ldots)\; |\; (\textbf{lambda}\; (x_{\_!\_}\; \ldots)\; e)\\
+      \; &|\; (\textbf{set!}\; x\; e)\; |\; (\textbf{raises}\; e)\\
+      \; &|\; (\textbf{var\dash ref}\; x)\; |\; (\textbf{var\dash ref/no\dash check}\; x) \\
+      \; &|\; (\textbf{var\dash set!}\; x\; e)  \\
+      \; &|\; (\textbf{var\dash set/check\dash undef!}\; x\; e)
     \end{align*}
   \caption{Linklet Source Language}
   \label{fig:linklet-source}
@@ -29,74 +41,67 @@ to verify the Pycket implementation and the model with each other.
 Figure \ref{fig:linklet-source} shows the grammar of the linklet
 language, which is a minimal subset of the Fully Expanded Racket
 Programs extended with the \verb|linklet| form and toplevel
-definitions. Figure \ref{fig:racket-source} presents the grammar for
-the Racket part of the language, which is used within the linklet
-body. In the remainder of this document we will call this sub-language
-Racket Core (RC). RC is basically a $\lambda$-calculus with a handful of
-syntactic extensions, as well as some additional forms to manipulate
-linklet variables (e.g. \emph{var-ref}).
+definitions. The sub-language that is used within the linklet body,
+namely the Racket Core (RC) is basically a $\lambda$-calculus with a handful
+of syntactic extensions. In addition to the basic forms such
+as \racketcode{begin}, \racketcode{set!}, \racketcode{if} etc., RC has
+some additional forms to manipulate linklet variables
+(e.g. \emph{var-ref}), as shown in \verb|e| rule. % figure \ref{fig:racket-source}.
 
-\begin{wrapfigure}[24]{r}{0.45\textwidth}
-  \vspace{-0.8cm}
-  \footnotesize
-%\begin{figure}[h]
-  \begin{mdframed}
-    \begin{align*}
-      e &::=\; x\; |\; v\; |\; (e\; e\; \ldots)\; |\; (\textbf{if}\; e\; e\; e)\; |\; (o\; e\; e)\; \\
-      \; &|\; (\textbf{begin}\; e\; e\; \ldots)\; |\; (\textbf{lambda}\; (x_{\_!\_}\; \ldots)\; e)\\
-      \; &|\; (\textbf{set!}\; x\; e)\; |\; (\textbf{raises}\; e)\\
-      \; &|\; (\textbf{var\dash ref}\; x)\; |\; (\textbf{var\dash ref/no\dash check}\; x) \\
-      \; &|\; (\textbf{var\dash set!}\; x\; e)  \\
-      \; &|\; (\textbf{var\dash set/check\dash undef!}\; x\; e) \\
-      v   &::=\; n\; |\; b\; |\; c\; |\; (void)\;|\; uninit \\ %;; values
-      c   &::=\; (closure\; (x\; \ldots)\; e\; \rho) \\
-      n   &::=\; number \\
-      b   &::=\; true\; |\; false \\
-      var &::=\; variable\dash not\dash otherwise\dash mentioned \\ %;; variables
-      x,\; cell &::=\; variable\dash not\dash otherwise\dash mentioned \\ %;; variables
-      o  &::=\; +\; |\; * |\; < \\
-      \rho   &::=\; ((x\; var)\; \ldots) \tag*{[Environment]}\\
-      \sigma   &::=\; ((var\; v)\; \ldots) \tag*{[Store]}\\
-      E   &::=\; []\; |\; (v\; \ldots\; E\; e\; \ldots)\; |\; (o\; E\; e)\; |\; (o\; v\; E) \\
-      \;  &|\; (\textbf{var\dash set!}\; x\; E)\; |\; (\textbf{set!}\; x\; E)\; \\
-      \;  &|\; (\textbf{var\dash set/check\dash undef!}\; x\; E) \\
-      \;  &|\; (\textbf{begin}\; v\; \ldots\; E\; e\; \ldots)\; |\; (\textbf{if}\; E\; e\; e)
-    \end{align*}
-    \caption{Racket Core Language (RC)}
-    \label{fig:racket-source}
-  \end{mdframed}
-%\end{figure}
-\end{wrapfigure}
+%% \begin{wrapfigure}[24]{r}{0.45\textwidth}
+%%   \vspace{-0.8cm}
+%%   \footnotesize
+%% %\begin{figure}[h]
+%%   \begin{mdframed}
+%%     \begin{align*}
+%%       e &::=\; x\; |\; v\; |\; (e\; e\; \ldots)\; |\; (\textbf{if}\; e\; e\; e)\; |\; (o\; e\; e)\; \\
+%%       \; &|\; (\textbf{begin}\; e\; e\; \ldots)\; |\; (\textbf{lambda}\; (x_{\_!\_}\; \ldots)\; e)\\
+%%       \; &|\; (\textbf{set!}\; x\; e)\; |\; (\textbf{raises}\; e)\\
+%%       \; &|\; (\textbf{var\dash ref}\; x)\; |\; (\textbf{var\dash ref/no\dash check}\; x) \\
+%%       \; &|\; (\textbf{var\dash set!}\; x\; e)  \\
+%%       \; &|\; (\textbf{var\dash set/check\dash undef!}\; x\; e) \\
+%%       v   &::=\; n\; |\; b\; |\; c\; |\; (void)\;|\; uninit \\ %;; values
+%%       c   &::=\; (closure\; (x\; \ldots)\; e\; \rho) \\
+%%       n   &::=\; number \\
+%%       b   &::=\; true\; |\; false \\
+%%       var &::=\; variable\dash not\dash otherwise\dash mentioned \\ %;; variables
+%%       x,\; cell &::=\; variable\dash not\dash otherwise\dash mentioned \\ %;; variables
+%%       o  &::=\; +\; |\; * |\; < \\
+%%       \rho   &::=\; ((x\; var)\; \ldots) \tag*{[Environment]}\\
+%%       \sigma   &::=\; ((var\; v)\; \ldots) \tag*{[Store]}\\
+%%       E   &::=\; []\; |\; (v\; \ldots\; E\; e\; \ldots)\; |\; (o\; E\; e)\; |\; (o\; v\; E) \\
+%%       \;  &|\; (\textbf{var\dash set!}\; x\; E)\; |\; (\textbf{set!}\; x\; E)\; \\
+%%       \;  &|\; (\textbf{var\dash set/check\dash undef!}\; x\; E) \\
+%%       \;  &|\; (\textbf{begin}\; v\; \ldots\; E\; e\; \ldots)\; |\; (\textbf{if}\; E\; e\; e)
+%%     \end{align*}
+%%     \caption{Racket Core Language (RC)}
+%%     \label{fig:racket-source}
+%%   \end{mdframed}
+%% %\end{figure}
+%% \end{wrapfigure}
 
-Figure \ref{fig:linklet-runtime} shows the grammar of the run\dash
-time language for linklets, i.e. expressions that represent the
-run\dash time objects used during an instantiation of linklets. Given a
-linklet L, \emph{compile-linklet} produces a linklet object $\la$ that
-is ready to be instantiated. $\la$ consists of \textit{Import} and
-\textit{Export} objects for the identifiers denoting the imported and
-exported variables, and the body expressions with potentially some
-additional expressions for variable manipulations in the run\dash
-time. Each \textit{Import} and \textit{Export} object consists of two
-identifiers that are internal and external with respect to the linklet
-body (a variable may be imported/exported with different names), and
-one fresh identifier for internal use during the instantiation.
+Before a linklet is ready for instantiation, as part of the
+\racketcode{compile-linklet} process, several passes over the linklet are
+performed to ensure a correct information flow between the variables
+in the run\dash time. For each import and export identifier (and
+possibly their corresponding renamings), \emph{Import} and
+\emph{Export} objects are created with the fresh references that
+will be used to name the variables that are dynamically created during
+the instantiation. Additionally, a pass on the linklet body collects
+all the identifiers that are defined within the linklet body and all
+the mutated identifiers.
 
-After compiling, before the instantiation of a linklet object begins,
-the \textit{Import} and \textit{Export} objects are processed. As we
-detail below, references for the imported variables are collected from
-the given import instances, and additional variables may be created
-for exported variables. $\lb$ denotes a compiled linklet object after
-such a preparation step, with which the actual instantition may
-begin. Note that $\lb$ contains only a reference (to a linklet
-instance that is used during the instantiation) and the body
-expressions, and doesn't contain the import and export objects, as the
-instantiation uses the variables that are already prepared for
-them. Finally a \textbf{linklet\dash instance} is a finite mapping
-from symbols to variables.
+Given a set of \emph{Import}s ($\mathit{C_I}$) and a set of
+\emph{Export}s ($\mathit{C_E}$), a set of toplevel defined
+identifiers ($\mathit{X_T}$) and a set of mutated identifiers
+($\mathit{X_M}$), the compilation starts to process each expression in
+the linklet body one by one, performing the following actions
+depending on the type of expression:
 
-\begin{wrapfigure}[15]{r}{0.45\textwidth}
-  \vspace{-1cm}
-  \footnotesize
+\begin{wrapfigure}[14]{r}{0.45\textwidth}
+  \vspace{-0.9cm}
+  %\footnotesize
+  \small
 %\begin{figure}[h!]
   \begin{mdframed}
     \begin{align*}
@@ -116,34 +121,55 @@ from symbols to variables.
 %\end{figure}
 \end{wrapfigure}
 
-Before a linklet is ready for instantiation, as part of the
-\verb|compile-linklet| process, several passes over the linklet are
-performed to ensure a correct information flow between the variables
-in the run\dash time. For each import and export identifier (and
-possibly their corresponding renamings), \textit{Import} and
-\textit{Export} objects are created with the fresh references that
-will be used to name the variables that are dynamically created during
-the instantiation. Additionally, a pass on the linklet body collects
-all the identifiers that are defined within the linklet body and all
-the mutated identifiers.
-
-Given a set of \textit{Import}s ($\mathit{C_I}$) and a set of
-\textit{Export}s ($\mathit{C_E}$), a set of toplevel defined
-identifiers ($\mathit{X_T}$) and a set of mutated identifiers
-($\mathit{X_M}$), the compilation starts to process each expression in
-the linklet body one by one, performing the following actions
-depending on the type of expression:
 
 \begin{itemize}
-  \footnotesize
+  \small
 \item For a `(\textbf{define-values} (x) e)` expression where $(\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in \mathit{C_E}$ (i.e. x is exported), add an additional `(\textbf{var-set!} $x_{gen}$ x)` expression.
-\item For a `(\textbf{set!} x e)` expression where $(\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in \mathit{C_E}$ (i.e. x is exported), turn the expression into `(\textbf{var-set/check-undef!} $x_{gen}$ e)`.
-\item For any identifier x where $(\textbf{Import}\; x_{gen}\; x\; x_{ext}) \in \mathit{C_I}$ (i.e. x is imported), turn the identifier into `(\textbf{var-ref/no-check} $x_{gen}$)`.
-\item For any identifier x where $(\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in \mathit{C_E}$ and either $x \in \mathit{X_M}$ or $x \notin \mathit{X_T}$, turn the identifier into `(\textbf{var-ref} $x_{gen}$)`.
+\item For a `(\textbf{set!} x e)` expression where $(\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in \mathit{C_E}$ (i.e. x is exported), turn the expression into \\ `(\textbf{var-set/check-undef!} $x_{gen}$ e)`.
+\item For any identifier x where $(\textbf{Import}\; x_{gen}\; x\; x_{ext}) \in \mathit{C_I}$  (i.e. x is imported), turn the identifier into \\ `(\textbf{var-ref/no-check} $x_{gen}$)`.
+\item For any identifier x where $(\textbf{Export}\; x_{gen}\; x\; x_{ext}) \in \mathit{C_E}$ and either $x \in \mathit{X_M}$ or $x \notin \mathit{X_T}$, turn the identifier into \\ `(\textbf{var-ref} $x_{gen}$)`.
 \item For any other expression e, recurse if e has subforms, return otherwise.
 \end{itemize}
 
-\begin{wrapfigure}[22]{r}{0.5\textwidth}
+Figure \ref{fig:linklet-runtime} shows the grammar of the run\dash
+time language for linklets, i.e. expressions that represent the
+run\dash time objects used during an instantiation of linklets. Given a
+linklet L, \emph{compile-linklet} produces a linklet object $\la$ that
+is ready to be instantiated. $\la$ consists of \emph{Import} and
+\emph{Export} objects for the identifiers denoting the imported and
+exported variables, and the body expressions with potentially some
+additional expressions for variable manipulations in the run\dash
+time.
+
+Each \emph{Import} and \emph{Export} object consists of two
+identifiers that are internal and external with respect to the linklet
+body (to accommodate renamings), and one fresh identifier for internal
+use during the instantiation. The \emph{Import} and \emph{Export}
+objects are processed as the first step of the instantiation. As we
+detail below, references for the imported variables are collected from
+the given import instances, and additional variables may be created
+for exported variables depending on the target instance as we have
+shown in the example in \secref{subsec:toplevel-example}. $\lb$
+denotes a compiled linklet object after such a preparation step, with
+which the actual instantition may begin. Note that $\lb$ contains only
+a reference (to the target instance that is used during the
+instantiation) and the body expressions, and doesn't contain the
+import and export objects, as the instantiation uses the variables
+that are already prepared for them. Finally
+a \emph{linklet-instance} is a finite mapping from symbols to
+variables.
+
+Since the linklets are lambda\dash like binding forms and not capable
+of starting a computation by themselves, we introduce a top\dash level
+form, namely \racketcode{program}. A \racketcode{program} consists of
+a set of given linklets to be loaded and a single top\dash level
+expression to perform a computation. \figref{fig:linklet-program}
+shows part of the grammar for \racketcode{program}s. We provided
+the \racketcode{let-inst} form to name a linklet instance,
+and \racketcode{seq} form to perform multiple computations in
+sequence.
+
+\begin{wrapfigure}[13]{r}{0.5\textwidth}
   \footnotesize
   \vspace{-0.5cm}
 %\begin{figure}[h]
@@ -156,28 +182,14 @@ depending on the type of expression:
       \;          &\;|\; \bm{\Phi^V}(x\; x) \\
       l\dash ref &::=\; x\; |\; L\dash obj \\
       v           &::=\; ....\;|\;(v\;x) \\
-      EP          &::=\; [] \\
-      \;          &\;|\; \bm{\Phi^I}((\lb\; x\; v\; \ldots\; EP\; l\dash top\; \ldots)\; x\; \ldots) \\
-      \;          &\;|\; (\textbf{define\dash values}\:(x)\:EP) \\
-      \;          &\;|\; (\textbf{let\dash inst}\; x\; EP\; p\dash top) \\
-      \;          &\;|\; (\textbf{seq}\; v\; \ldots\; EP\; p\dash top\; \ldots) \\
-      \;          &\;|\; (\textbf{program}\; ()\; EP) \\
     \end{align*}
     \hfill \footnotesize $\Phi^V : \textbf{instance\dash variable\dash value}\:,\: \Phi^I : \textbf{instantiate\dash linklet}$
-    \caption{Linklet Programs}
+    \caption{Linklet Program Source Language}
     \label{fig:linklet-program}
   \end{mdframed}
 %\end{figure}
 \end{wrapfigure}
 
-Since the linklets are lambda\dash like binding forms and not capable
-of starting a computation by themselves, we introduce a top\dash level
-form, namely \verb|program|. A \verb|program| consists of a set of
-given linklets to be loaded and a single top\dash level expression to
-perform a computation. \figref{fig:linklet-program} shows the
-grammar for \verb|program|s. We provided the \verb|let-inst| form to
-name a linklet instance, and \verb|seq| form to perform multiple
-computations in sequence.
 
 As an example, we can represent the top-level repl example from the
 previous section as a linklet \emph{program}, and simulate the
@@ -187,11 +199,10 @@ repl interaction. After the compilation, the linklets are substitiuted
 in the body and the evaluation starts with reducing the
 body. \figref{fig:reduction} shows the reduction relation, $\beta_p$, that
 implements the evaluation, together with the reduction relation for
-RC, $\beta_r$, that is shown in \figref{fig:rc-reduction}. For clarity,
-the reduction of the programs and the linklet instantiation is defined
-together by the same relation ($\beta_p$) so that the whole evaluation
-generating a single small-step sequence of reductions from programs to
-values.
+RC, $\beta_r$. For clarity, the reduction of the programs and the linklet
+instantiation is defined together by the same relation ($\beta_p$) so that
+the whole evaluation generating a single small-step sequence of
+reductions from programs to values.
 
 \begin{table}[h!]
   \vspace{1cm}
@@ -206,26 +217,6 @@ values.
            [l3 (linklet () (k) (k))])
   (let-inst t (make-instance)
      (seq ($\phi^I$ l1 #:t t) ($\phi^I$ l2 #:t t) ($\phi^I$ l3 #:t t))))
-    \end{lstlisting} & [] & [] \\ \hline
-    $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
-(program ([l2 (linklet () (a) (define-values (a) 10) (void))]
-           [l3 (linklet () (k) (k))])
-  (let-inst t (make-instance)
-     (seq ($\phi^I$ (L$\alpha$ () ((Export a1 a a) (Export k1 k k))
-                   (define-values (k) (lambda () (var-ref a1)))
-                   (var-set! k1 k) (void)) #:t t)
-           ($\phi^I$ l2 #:t t)
-           ($\phi^I$ l3 #:t t))))
-    \end{lstlisting} & [] & [] \\ \hline
-    $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
-(program ([l3 (linklet () (k) (k))])
-  (let-inst t (make-instance)
-     (seq ($\phi^I$ (L$\alpha$ () ((Export a1 a a) (Export k1 k k))
-                   (define-values (k) (lambda () (var-ref a1)))
-                   (var-set! k1 k) 1) #:t t)
-           ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
-                   (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
-           ($\phi^I$ l3 #:t t))))
     \end{lstlisting} & [] & [] \\ \hline
     $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
 (program ()
