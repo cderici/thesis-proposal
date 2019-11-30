@@ -1,4 +1,4 @@
-\subsubsection{On Portability}
+\subsubsection{On Racket's Portability}
 \label{subsec:portability}
 
 The ability to provide high-level functionalities as callable
@@ -6,18 +6,38 @@ functions to the hosting virual machine is one of the key ideas in
 improving Racket's portability. A VM that wants to host Racket not
 only gets the high-level implementations such as the module system,
 macro system for free, but also gets highly re-usable functionalities
-that it can integrate the systems it implements (such as the top-level
-repl example in the previous section).
+that it can integrate the systems it implements, such as the top-level
+repl example in \figref{fig:repl-rpython}.
 
 Moreover, Racket implements and exports abstract functionalities that
 are tightly coupled with the hosting run-time as well. For instance
 the expander linklet provides the \racketcode{eval} function, which is
 basically an abstract interpreter for Racket. A VM that hosts Racket
 can call \racketcode{eval}, which interprets Racket code by using the
-primitives and \racketcode{compile-linklet}
+run-time primitives and \racketcode{compile-linklet}
 and \racketcode{instantiate-linklet} that are implemented and provided
 by the VM itself.
 
-We will discuss a bit more on increasing the language portability in
-\secref{subsec:pycket} where I will demonstrate this API in action on
-Pycket.
+Therefore, one of the essential nuances of self-hosting Racket with
+the expander linklet, is that the interaction between the run-time and
+the expander is a two-way street. The VM implements and uses
+\racketcode{compile-linklet} and \racketcode{instantiate-linklet} to
+import the functions provided by the expander, and the expander
+provides functions that uses the \racketcode{compile-linklet} and
+\racketcode{instantiate-linklet} functions, along with the other
+run-time primitives as well.
+
+For example, the \racketcode{dynamic-require} used above (provided by
+the expander linklet) is a Racket function that dynamically loads a
+Racket module (if it's not already loaded) by resolving the module
+path, finding the source code in the file system, reading and
+expanding the codes and modifying the namespace registry. The Racket
+code inside the expander that implements all that, calls run-time
+primitives such as for file-system support and also calls the
+\racketcode{compile-linklet} and \racketcode{instantiate-linklet} for
+expanding and instantiating all the required
+modules. \racketcode{eval} works in a similar fashion as well.
+
+This intertwined nature of the high-level language facilities and the
+low-level run-time support is central to the Racket's improved
+portability.

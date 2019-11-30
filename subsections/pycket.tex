@@ -171,30 +171,4 @@ contain 32 linklet related functions including the
 \emph{compile-linklet}, \emph{instantiate-linklet} and
 \emph{instance-variable-value}.
 
-\subsubsection{More On Portability}
-\label{subsec:more-portability}
-
-One of the essential nuances of self-hosting Racket with the expander
-linklet, is that the interaction between the run-time and the expander
-is a two-way street. The VM implements and uses
-\racketcode{compile-linklet} and \racketcode{instantiate-linklet} to
-import the functions provided by the expander, and the expander
-provides functions that uses the \racketcode{compile-linklet} and
-\racketcode{instantiate-linklet} functions, along with the other
-run-time primitives as well.
-
-For example, the \racketcode{dynamic-require} used above (provided by
-the expander linklet) is a Racket function that dynamically loads a
-Racket module (if it's not already loaded) by resolving the module
-path, finding the source code in the file system, reading and
-expanding the codes and modifying the namespace registry. The Racket
-code inside the expander that implements all that calls run-time
-primitives such as for file-system support and also calls the
-\racketcode{compile-linklet} and \racketcode{instantiate-linklet} for
-expanding and instantiating all the required modules. Another example
-is the \racketcode{eval} function as we discussed in
-\secref{subsec:portability}.
-
-This intertwined nature of the high-level language facilities and the
-low-level run-time support is central to the Racket's improved
-portability.
+\inputsec{on-portability}
