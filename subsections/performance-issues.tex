@@ -266,8 +266,8 @@ The main issue here is that any functionality that Pycket now imports
 and runs as Racket code, normally would've been implemented on the
 language interpreter in RPython and optimized using the interpreter
 hints that the RPython framework provides for interpreter authors,
-such as the regexp implementation. However, since it now evaluates
-Racket code to extend the functionalities of the interpreter, it is
+such as the regexp implementation. However, since Pycket now evaluates
+Racket code to extend the functionalities of its interpreter, it is
 unable to use the hints to optimize the implementation on the JIT. In
 other words, what gives Pycket the extendability at the language level
 via importing implementations as Racket code also cripples it by
@@ -279,20 +279,22 @@ To address this, we propose to develop and use the
 \emph{meta-hints}. Meta-hints is a generalization of the RPython
 interpreter hints that extends further the communication between the
 language being implemented and the tracing-JIT run-time. Recall from
-\secref{subsec:rpython}, a language interpreter written in RPython can
-utilize a \verb|JitDriver| reflection provided by the RPython
-framework to define its own "program counter" and use hints such as
-\verb|jit_merge_point| and \verb|can_enter_jit| to indicate a starting
-point for a trace and where the interpreter might perform a backwards
-jump, respectively. An example can be seen in
-\figref{fig:rpython-interp} in \secref{subsec:rpython}.
+\secref{subsec:rpython}, that a language interpreter written in
+RPython can utilize a \verb|JitDriver| reflection provided by the
+RPython framework to define its own program counter (pc) and use hints
+such as \verb|jit_merge_point| and \verb|can_enter_jit| to indicate a
+starting point for a trace and where the interpreter might perform a
+backwards jump, respectively. An example can be seen in
+\figref{fig:rpython-interp} in \secref{subsec:rpython}. Pycket's
+interpreter's two-state tracking defines the program counter (green
+variables) as a pair of a lambda form and an application form
+(call-site) to determine the trace header.
 
-Recall that the Pycket's interpreter uses the two-state tracking to
-determine the trace header as a pair of a lambda AST form and its
-call-site. In its original form in \figref{fig:regexp} (without the
-meta-hints), in order for a trace to be formed for one of the looping
-points in the \verb|match-pat| function, the input needs to go into
-the same branch enough times to make that branch "hot". Therefore,
+For the \verb|match-pat| function, in its original form in
+\figref{fig:regexp} (without the meta-hints), in order for a trace to
+be formed for one of its looping branches while being evaluated on
+Pycket, the input needs to go into the same branch and make a
+recursive jump enough times to make that branch "hot". Therefore,
 until it becomes hot, the tracer continues to trace through the jumps,
 landing in the same lambda, but passing through the different branches
 along the way (because the input doesn't necessarily go into the same
@@ -305,39 +307,52 @@ well, generating a large and convoluted trace.
   \footnotesize
   \begin{mdframed}
 \begin{lstlisting}[mathescape,escapechar=\%,language=lisp]
-(%\underline{define/with-meta-hints}% (match-pat pattern p-pos str s-pos m)
+(%\underline{define/jit-merge-point}% (match-pat pattern p-pos str s-pos m) #:greens pattern
   (cond
     [(>= p-pos (string-length pattern)) m]
     [(and (< (+ p-pos 1) (string-length pattern)) (char=? (string-ref pattern (+ p-pos 1)) #\*))
       (match-star pattern p-pos str s-pos (+ p-pos 1) m)]
     [(char=? (string-ref pattern p-pos) #\.)
       (and (< s-pos (string-length str))
-            (%\underline{can-enter-jit}% (match-pat pattern (add1 p-pos) str (add1 s-pos) (cons (string-ref str s-pos) m))))]
+            (%\underline{can-enter-jit1}% (match-pat pattern (add1 p-pos) str (add1 s-pos) (cons (string-ref str s-pos) m))))]
     [else
      (and (char=? (string-ref pattern p-pos) (string-ref str s-pos))
-           (%\underline{can-enter-jit}% (match-pat pattern (add1 p-pos) str (add1 s-pos) (cons (string-ref str s-pos) m))))]))
+           (%\underline{can-enter-jit2}% (match-pat pattern (add1 p-pos) str (add1 s-pos) (cons (string-ref str s-pos) m))))]))
 \end{lstlisting}
 \end{mdframed}
 \caption{Regexp dispatch loop with meta-hint annotations.}
 \label{fig:annotated-regexp}
 \end{figure}
 
-The meta-hints approach aim to solve this problem by allowing the
-RPython hints to be dynamically changed or added via the source
-program. For example, \figref{fig:annotated-regexp} shows the main
-dispatch-loop of the regexp implementation in \figref{fig:regexp},
-annotated with meta-hints to dynamically modify Pycket's interpreter's
-way of tracking the program state. With these annotations supported by
-the language interpreter (possibly through primitives that internally
-modify the AST states), the tracer knows that a point might be a
-backwards jump and stops tracing further\footnote{Pycket's hints in
-  the interpreter code would allow it to go further} and only
-considers the path from the body entry through a particular branch to
-the looping call. Note that the input is still a non-repetitive
-sequence of data, so the tracer will still go in different branches at
-each step. However, when a path for a branch becomes hot, the
-generated trace will contain only the codes for that particular path,
-thereby producing a tight and concise loop for that single branch.
+The meta-hints approach aim to solve this problem in a number of
+ways. As an example, \figref{fig:annotated-regexp} shows the main
+dispatch-loop of the regexp implementation in
+\figref{fig:regexp}. First, it adds additional components to the
+"green" variables to extend the definition of pc, thereby contributing
+to the profiling performed by the language interpreter. For example,
+if this program was an actual interpreter (as in the case of
+self-hosting), instead of a regexp implementation, these green
+variables will be the pc for the language being implemented, combined
+with the pc of the underlying language interpreter being
+meta-traced. Additionally, marking the points where a backwards jump
+may occur at this level (by the \verb|can-enter-jit| no-ops) helps the
+profiling on Pycket by considering only the marked spots, as opposed
+to every lambda application.
+
+A more complicated idea here is to use the meta-hints to help reduce
+the branching effect. Currently the tracer follows the interpreter
+through the branches and loops and records a sequence of instructions
+for a single loop. Note that the input is still a possibly
+non-repetitive sequence of data, so the tracer will still go in
+different branches at each step without stopping. Pausing and
+unpausing the tracer at certain spots would make forming a trace much
+more complicated, as it could easily invalidate a certain computation
+path and render the recorded instructions unusable. However, if the
+tracer is modified to label the instructions as it records, then it
+might be possible to filter out instructions and compose a trace that
+only includes the instructions with a certain label, thereby forming a
+bundle of coherent and concise loops involving only the paths for each
+branch.
 
 %% \begin{wrapfigure}[26]{r}{0.40\textwidth}
 %%     \vspace{-0.5cm}
