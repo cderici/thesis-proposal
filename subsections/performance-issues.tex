@@ -457,7 +457,7 @@ first runs the expander to fully expand the module before running
 it. Since the expansion of a given Racket module is included in
 Pycket's run-time, the JIT suffers from a large number of heap
 allocations for the continuation chains often caused by the control
-indirections within the macro-system. This, in turn, creates a
+indirections such as within the macro-system. This, in turn, creates a
 pressure for the garbage collection, as the GC is triggered by
 allocations. To understand the issue better, we start by briefly
 describing the GC utilized by the RPython framework.
@@ -485,7 +485,7 @@ Now that the Racket's expander is used to expand a given module within
 the Pycket's run-time, the life in the heap is much different than
 what a generational GC would like to see. The allocated objects are
 rather big and live very long. Even the expander itself is allocated
-as a linklet instance containing more than 2000 variables, and live
+as a linklet instance containing more than 2000 functions, and live
 during the whole run-time. Another example is the long continuation
 chains caused by the large depth of the real-world Racket programs
 such as the macro-system or the module-system. In the \emph{minimark
@@ -493,9 +493,9 @@ such as the macro-system or the module-system. In the \emph{minimark
 ("external"), where they will not be moved anymore and collected in a
 mark-and-sweep fashion to avoid costly moves. However, since our setup
 creates many objects (often large) that live long, not only we don't
-benefit the nursery approach enough but also the mark-and-sweep
+benefit from the nursery approach enough but also the mark-and-sweep
 process creates a pressure on the run-time performance, as it is a
-serial pasuing collector.
+serial blocking collector.
 
 To address this issue (without modifying the underlying framework nor
 the GC), we propose to use a stackful interpreter to decrease the
@@ -524,8 +524,45 @@ interpreters together, repeatedly switch between the two whenever
 appropriate, making sure that the switches don't induce a high
 performance overhead.
 
-\begin{wrapfigure}[19]{l}{0.5\textwidth}
-  \vspace{-0.5cm}
+One of the most fundamental points here is the interaction between the
+two interpreters. Essentially, we want to use the stack to save some
+heap space (thereby reducing the GC pressure) and take advantage of
+faster allocations and locality. On the other hand, we don't want to
+lose the benefits of the JIT's performance optimizations on the
+CEK. Moreover, the stack management needs to be on point to avoid
+problems such as switching back to the CEK when the stack is very deep
+(e.g. stack overflow), since that would require allocating enough
+continuations on the heap to counterbalance the performance benefit we
+get from using the stackful interpreter in the first place.
+
+To understand this problem better and to work on a simpler setup, I
+developed a formalism that includes both the CEK machine and the
+stackful interpreter evaluating a very simple subset of Racket
+together. [FIXME: Figure asdasd] shows the language we're working on,
+which is similar to the Racket Core language used in
+\secref{subsec:linklets-semantics} minus the forms for the linklet
+variables, plus additional continuations for the CEK and
+\racketcode{convert} forms for controlling the interpreter switches
+from the source level. \figref{fig:cek-switch-stack} shows the
+overview of the interaction between the two models. We can start with
+either of the interpreters and switch back and forth between them
+using the \racketcode{convert} forms manually within the source code.
+
+\begin{itemize}
+\item Example switch from cek to stackful
+\item Example switch from stackful to cek
+\end{itemize}
+
+In addition the formalism, in order to see how well this would perform
+in action, we also prototyped an implementation on Pycket. It works in
+a similar way to the model in \figref{fig:cek-switch-stack}, except
+the starting point is the CEK, because Pycket needs to instantiate and
+import the bootstrapping linklets at the startup and start a
+computation by loading and running the program via the
+\racketcode{read}, \racketcode{expand} etc.
+
+\begin{wrapfigure}[19]{r}{0.5\textwidth}
+  \vspace{-0.2cm}
 \small
 \begin{lstlisting}[mathescape]
 (define (branchy lst)
@@ -538,10 +575,10 @@ performance overhead.
               (if (< index 3)
                   (if (< index 2)
                       (loop (cdr lst))
-                      (loop (cdr lst)))
+                      (+ 3 (loop (cdr lst))))
                   (if (< index 5)
                       (if (< index 4)
-                          (+ 3 (loop (cdr lst)))
+                          (loop (cdr lst))
                           (+ 5 (loop (cdr lst))))
                       (if (< index 6)
                           (loop (cdr lst))
@@ -552,51 +589,53 @@ performance overhead.
 \label{fig:branchy}
 \end{wrapfigure}
 
-One of the most fundamental points here is the interaction between the
-two interpreters. Essentially, we want to use the stack to save some
-heap space (thereby reducing the GC pressure) and take advantage of
-faster allocations and locality. On the other hand, however, we don't
-want to lose the benefits of the JIT's performance optimizations on
-the CEK. Moreover, the stack management needs to be on point to avoid
-problems such as switching back to the CEK while the stack is very
-deep (e.g. stack overflow), since that would require allocating enough
-continuations on the heap to counterbalance the performance benefit we
-get from using the stackful interpreter in the first place.
+The CEK starts the computation and handles the control to the stackful
+whenever it encounters a \racketcode{let} or a \racketcode{begin}
+form. The switch happens by just calling the stackful interpreter. The
+stackful interpreter includes a trampoline to handle the tail-calls,
+and in the current implementation it automatically switches back to
+the CEK whenever \textbf{i)} it returns, or \textbf{ii)} a CPSed
+primitive (e.g. a higher order function) is used, or \textbf{iii)} a
+stack overflow is detected. The switch back to the CEK happens by
+rewinding the stack via a \verb|ConvertStack| exception in which the
+forms in each activation record installs a continuation. The CEK takes
+the control and all the information at the previous switch-to-stack
+point and continues from there.
 
-To understand this problem better and to work on a simpler setup, I
-developed a formalism that includes both the CEK machine and the
-stackful interpreter evaluating a very simple subset of Racket
-together. [FIXME: Figure asdasd] shows the language we're working on, which
-is similar to the Racket Core language used in
-\secref{subsec:linklets-semantics} minus the forms for the linklet
-variables, plus additional continuations for the CEK and
-\racketcode{convert} forms for controlling the interpreter switches
-from the source level. [FIXME: Figure cek-switch-stack] shows the overview of
-the interaction between the two models. We can start with either of
-the interpreters and switch back and forth between them using the
-\racketcode{convert} forms.
+The main investigation here is about the increase in the overall
+performance with the following constraints: \textbf{i)} The number of
+points where a switch occurs between the two interpreters and the
+switching overhead should both be minimal, and \textbf{ii)} the amount
+of copying activation records from the stack into the continuations in
+the heap should be bounded. Since we're interested in the performance
+on self-hosting Racket on Pycket, we are still interested in
+interpreter-style dispatch loops. Therefore as a preliminary
+experiment, we synthesized a program by simplifying the Racket's
+\racketcode{fasl->s-exp} function from the FASL\footnote{fast-load
+  serialization} library, which deserializes a given byte stream into
+an s-expression. \figref{fig:branchy} shows the simplified program,
+which takes a list of numbers and takes different branches depending
+on the number. Note that some of the recursive calls are not
+tail-calls, i.e. installs a continuation every time it is evaluated.
 
-\begin{itemize}
-\item Example switch from cek to stackful
-\item Example switch from stackful to cek
-\end{itemize}
+We ran this program on Pycket using Stackful+CEK and only-CEK with
+different auto-generated inputs containing; only 1s, only 2s, and
+random [0-7], each having 1000 and 2000 numbers. The runtimes for the
+ones with only 1s and 2s are quite similar, except a larger warmup
+time for the stackful interpreter, which is expected since RPython's
+meta-tracing is not designed for recursive interpreters, therefore it
+needs to be further optimized. However, we observe a consistent
+increase in the run-time performance in the randomized experiments
+(both 1000 and 2000) which visits different branches. Below are the
+medians for the run-times for the experiments using 1000 numbers.
 
-[FIXME: The bound on the stack and the heap]
+\begin{figure}[h!]
+  \centering
+  \includegraphics[scale=0.5]{img/stackful}
+\end{figure}
 
-[FIXME: The implementation]
-
-\begin{itemize}
-\item trampoline
-\item switch on overflow
-\item primitives
-\item switch on higher-order calls
-\item entry is still cek
-\end{itemize}
-
-[FIXME: Experiment]
-
-% the performance of system is limited by their implementation depending
-
-%% Because of the limited comparison points available I seek to further
-%% character- ize the performance of space-efficient coercions as a
-%% implementation technology by comparing wi
+Because of the limitations in the variety of programs that the
+stackful interpreter can currently run (without large amounts of
+switching), I seek to further characterize the performance of the
+stackful evaluation along the CEK interpreter especially on programs
+with heavy use of continuations.
