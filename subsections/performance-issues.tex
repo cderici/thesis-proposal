@@ -512,6 +512,17 @@ current CEK with a stackful interpreter. The idea is to use the stack
 and heap in balance to decrease the GC pressure and take advantage of
 using the stack, such as rapid allocations, locality etc.
 
+\begin{wrapfigure}[10]{r}{0.45\textwidth}
+  \vspace{-0.4cm}
+  \begin{mdframed}
+      \centering
+  \includegraphics[scale=0.15]{img/cek-stackful-switch}
+  \caption[hede]{Stackful \& CEK Switch}
+  \label{fig:cek--switch-stack}
+  \end{mdframed}
+%\end{figure}
+\end{wrapfigure}
+
 Using the stack to implement a language like Racket, however,
 understandibly introduces some challenges regarding the stack
 management, such as handling overflows due to arbitrarily deep
@@ -524,6 +535,25 @@ interpreters together, repeatedly switch between the two whenever
 appropriate, making sure that the switches don't induce a high
 performance overhead.
 
+\begin{wrapfigure}[11]{r}{0.45\textwidth}
+  \vspace{-0.6cm}
+  \footnotesize
+%\begin{figure}[h!]
+  \begin{mdframed}
+    \begin{align*}
+      e &::=\; x\; |\; v\; |\; (e\; e\; \ldots)\; |\; (\textbf{if}\; e\; e\; e)\; |\; (o\; e\; e)\; \\
+      \; &|\; (\textbf{begin}\; e\; e\; \ldots)\; |\; (\textbf{lambda}\; (x_{\_!\_}\; \ldots)\; e)\\
+      \; &|\; (\textbf{set!}\; x\; e)\; |\; (\textbf{raises}\; e)\\
+      \; &|\; (\textbf{let\dash values}\; (((x)\; e)\; \ldots)\; e)\\
+      \; &|\; (\textbf{convert\dash to\dash stackful}\; e)\\
+      \; &|\; (\textbf{convert\dash to\dash cek}\; e)
+    \end{align*}
+  \caption[hede]{Source Language for Stackful \& CEK Models}
+  \label{fig:st-cek--source}
+  \end{mdframed}
+%\end{figure}
+\end{wrapfigure}
+
 One of the most fundamental points here is the interaction between the
 two interpreters. Essentially, we want to use the stack to save some
 heap space (thereby reducing the GC pressure) and take advantage of
@@ -533,29 +563,28 @@ CEK. Moreover, the stack management needs to be on point to avoid
 problems such as switching back to the CEK when the stack is very deep
 (e.g. stack overflow), since that would require allocating enough
 continuations on the heap to counterbalance the performance benefit we
-get from using the stackful interpreter in the first place.
+get from using the stackful interpreter.
 
 To understand this problem better and to work on a simpler setup, I
 developed a formalism that includes both the CEK machine and the
-stackful interpreter evaluating a very simple subset of Racket
-together. [FIXME: Figure asdasd] shows the language we're working on,
-which is similar to the Racket Core language used in
-\secref{subsec:linklets-semantics} minus the forms for the linklet
-variables, plus additional continuations for the CEK and
-\racketcode{convert} forms for controlling the interpreter switches
-from the source level. \figref{fig:cek-switch-stack} shows the
-overview of the interaction between the two models. We can start with
-either of the interpreters and switch back and forth between them
-using the \racketcode{convert} forms manually within the source code.
+stackful interpreter, evaluating a very simple subset of Racket
+together, shown in \figref{fig:st-cek--source}, which is similar to the
+Racket Core language used in \secref{subsec:linklets-semantics} minus
+the forms for the linklet variables, plus some \racketcode{convert}
+forms for controlling the interpreter switches from the source
+level. \figref{fig:cek--switch-stack} shows the overview of the
+interaction between the two models. We can start with either of the
+interpreters and switch back and forth between them using the
+\racketcode{convert} forms manually within the source code.
 
-\begin{itemize}
-\item Example switch from cek to stackful
-\item Example switch from stackful to cek
-\end{itemize}
+\begin{minted}[numbersep=0pt,gobble=0,linenos,numbers=left,fontsize=\footnotesize,frame=lines]{racket}
+(eval-stackful (let-values (((a) 3)) (convert-to-cek (let-values (((b) 1)) (+ a b)))))
+(eval-cek (let-values (((a) 3)) (begin (convert-to-stackful (set! a 5)) a)))
+\end{minted}
 
 In addition the formalism, in order to see how well this would perform
 in action, we also prototyped an implementation on Pycket. It works in
-a similar way to the model in \figref{fig:cek-switch-stack}, except
+a similar way to the model in \figref{fig:cek--switch-stack}, except
 the starting point is the CEK, because Pycket needs to instantiate and
 import the bootstrapping linklets at the startup and start a
 computation by loading and running the program via the
