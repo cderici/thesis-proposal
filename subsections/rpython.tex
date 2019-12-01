@@ -52,14 +52,14 @@ instructions during interpretation. Starting with evaluating a given
 program with an interpreter, a JIT compiler stops the evaluation when
 a frequently evaluated instruction path is detected, compiles the
 instructions and starts using the compiled path whenever the same path
-needs to be evaluated again. [CITE?]
+needs to be evaluated again \cite{dynamo}.
 
 JITs have been shown to be significantly effective in implementing
-efficient VMs for dynamic languages [CITE]. There are two main
-approaches in JIT compilation. Method-based compilation work on the
-method level, and compile the most frequently used methods in the
-program [CITE], while trace-based JIT compilers compile the most
-frequently evaluated loops [CITE]. In this thesis, we're interested in
+efficient VMs for dynamic languages. There are two main approaches in
+JIT compilation. Method-based compilation work on the method level,
+and compile the most frequently used methods in the program, while
+trace-based JIT compilers compile the most frequently evaluated loops
+\cite{survey:05,jit-history:03}. In this thesis, we're interested in
 the trace-based JIT compilation, as we work with meta-tracing,
 
 Trace-based JIT compilation works on two principal assumptions:

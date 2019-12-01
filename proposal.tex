@@ -81,17 +81,13 @@ introduction on the problem of self-hosting on meta-tracing.
 
 In this section, I will expand on the introduction, and start with
 discussing in \secref{subsec:rpython} the RPython framework and how
-meta-tracing works. Then in \secref{subsec:performance}, I will
-introduce in detail the problems we will attempt to address in this
-thesis with preliminary experiments. Next we move on to building our
-tool on which we will discuss and demonstrate our solution
-approaches. I will start by detailing how language portability is
-increased in Racket via the linklets in \secref{subsec:linklets}. Then
-I will continue in \secref{subsec:pycket} with explaining how Pycket
-incorporates the linklets to become a full implementation of
-self-hosting Racket. Finally in \secref{subsec:solutions}, I will
-discuss our solution approaches to the performance issues introduced
-earlier with experiments and formalism using Pycket.
+meta-tracing works. Then in \secref{subsec:racket}, I will study the
+Racket's improved portability via linklets. Next in
+\secref{subsec:pycket} I will describe how the Racket's improved
+portability is used to turn Pycket into a run-time for a self-hosting
+Racket. Finally in \secref{subsec:performance}, I will introduce the
+performance problems that we identified as fundamental to self-hosting
+and meta-tracing, and propose approaches on addressing them.
 
 \inputsec{rpython}
 \inputsec{racket}
