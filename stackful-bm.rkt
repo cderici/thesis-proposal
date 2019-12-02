@@ -31,9 +31,9 @@
 
 (define bm
   (hc-append 50
-             (bench-res "all 1s" 20 19 20)
-             (bench-res "all 2s" 20 16 20)
-             (bench-res "random" 169 340)))
+             (bench-res "all 1s" 20 19 10)
+             (bench-res "all 2s" 20 16 10)
+             (bench-res "random" 169 340 20)))
 
 (define legend
   (vc-append
