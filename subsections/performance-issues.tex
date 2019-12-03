@@ -302,10 +302,10 @@ Pycket, the input needs to go into the same branch and make a
 recursive jump enough times to make that branch "hot". Therefore,
 until it becomes hot, the tracer continues to trace through the jumps,
 landing in the same lambda, but passing through the different branches
-along the way (because the input doesn't necessarily go into the same
-branch everytime). By the time that a particular branch becomes hot,
-the traced instructions often contain codes for the other branches as
-well, generating a large and convoluted trace.
+along the way (the input doesn't necessarily go into the same branch
+everytime). So when a particular branch becomes hot, the traced
+instructions often contain codes for the other branches as well,
+generating a large and convoluted trace.
 
 \begin{figure}[h!]
   %\vspace{-0.5cm}
@@ -327,6 +327,7 @@ well, generating a large and convoluted trace.
 \end{mdframed}
 \caption{Regexp dispatch loop with meta-hint annotations.}
 \label{fig:annotated-regexp}
+\vspace{-0.25cm}
 \end{figure}
 
 The meta-hints approach aim to solve this problem in a number of
@@ -450,6 +451,8 @@ coherent and concise loops involving only the paths for each branch.
 %% etc. (regexp stuff)
 
 %% - show how to make the regexp implementation faster and explain.
+
+\vspace{-0.25cm}
 
 \subsubsection{Garbage Collection (GC) Pressure}
 
@@ -594,8 +597,29 @@ import the bootstrapping linklets at the startup and start a
 computation by loading and running the program via the
 \racketcode{read}, \racketcode{expand} etc.
 
-\begin{wrapfigure}[19]{r}{0.5\textwidth}
-  \vspace{-0.7cm}
+The CEK starts the computation and handles the control to the stackful
+whenever it encounters a \racketcode{let} or a \racketcode{begin}
+form. The switch happens by just calling the stackful interpreter. The
+stackful interpreter includes a trampoline to handle the tail-calls,
+and in the current implementation it automatically switches back to
+the CEK whenever \textbf{i)} it returns, or \textbf{ii)} a CPSed
+primitive (e.g. a higher order function) is used, or \textbf{iii)} a
+stack overflow is detected. The switch back to the CEK happens by
+rewinding the stack via a \verb|ConvertStack| exception in which the
+forms in each activation record installs a continuation. The CEK takes
+the control and all the information at the previous switch-to-stack
+point and continues from there.
+
+The main investigation here is about the increase in the overall
+performance with the following constraints: \textbf{i)} The number of
+points where a switch occurs between the two interpreters and the
+switching overhead should both be minimal, and \textbf{ii)} the amount
+of copying activation records from the stack into the continuations in
+the heap should be bounded. Since we're interested in the performance
+on self-hosting Racket on Pycket, we are still interested in
+interpreter-style dispatch loops. Therefore as a preliminary
+experiment, we synthesized a program by simplifying the \begin{wrapfigure}[19]{r}{0.5\textwidth}
+  \vspace{-0.2cm}
 \small
 \begin{lstlisting}[mathescape]
 (define (branchy lst)
@@ -620,30 +644,7 @@ computation by loading and running the program via the
 \end{lstlisting}
 \caption{A simple program with non-trivial control flow.}
 \label{fig:branchy}
-\end{wrapfigure}
-
-The CEK starts the computation and handles the control to the stackful
-whenever it encounters a \racketcode{let} or a \racketcode{begin}
-form. The switch happens by just calling the stackful interpreter. The
-stackful interpreter includes a trampoline to handle the tail-calls,
-and in the current implementation it automatically switches back to
-the CEK whenever \textbf{i)} it returns, or \textbf{ii)} a CPSed
-primitive (e.g. a higher order function) is used, or \textbf{iii)} a
-stack overflow is detected. The switch back to the CEK happens by
-rewinding the stack via a \verb|ConvertStack| exception in which the
-forms in each activation record installs a continuation. The CEK takes
-the control and all the information at the previous switch-to-stack
-point and continues from there.
-
-The main investigation here is about the increase in the overall
-performance with the following constraints: \textbf{i)} The number of
-points where a switch occurs between the two interpreters and the
-switching overhead should both be minimal, and \textbf{ii)} the amount
-of copying activation records from the stack into the continuations in
-the heap should be bounded. Since we're interested in the performance
-on self-hosting Racket on Pycket, we are still interested in
-interpreter-style dispatch loops. Therefore as a preliminary
-experiment, we synthesized a program by simplifying the Racket's
+\end{wrapfigure}Racket's
 \racketcode{fasl->s-exp} function from the FASL\footnote{fast-load
   serialization} library, which deserializes a given byte stream into
 an s-expression. \figref{fig:branchy} shows the simplified program,
@@ -661,11 +662,15 @@ needs to be further optimized. However, we observe a consistent
 increase in the run-time performance in the randomized experiments
 (both 1000 and 2000) which visits different branches. Below are the
 medians for the run-times for the experiments using 1000 numbers.
-
-\begin{figure}[h!]
+\vspace{-0.3cm}
+\begin{figure}[h]
+%\begin{wrapfigure}{l}{0.5\textwidth}
   \centering
   \includegraphics[scale=0.5]{img/stackful2}
 \end{figure}
+%\end{wrapfigure}
+
+\vspace{-0.2cm}
 
 Because of the limitations in the variety of programs that the
 stackful interpreter can currently run (without large amounts of
