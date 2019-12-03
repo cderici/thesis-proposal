@@ -1,9 +1,11 @@
 %\newpage
 
+\vspace{-0.25cm}
+
 \section{Related Work}
 \label{sec:related}
 
-\vspace{-0.2cm}
+\vspace{-0.25cm}
 
 \paragraph{Higher-order dynamic VMs}
 Dynamic VM implementations are becoming increasingly popular for their
@@ -32,7 +34,7 @@ well, such as the SPUR, a tracing JIT compiler for CIL bytecode
 \cite{miller2004common}, meta-tracing languages that are implemented
 in C\# \cite{spur}.
 
-\vspace{-0.2cm}
+\vspace{-0.25cm}
 
 \paragraph{Tracing JIT VMs}
 Like PyPy, Pycket is built on the RPython meta-tracing framework as
@@ -46,7 +48,7 @@ some commercial VMs such as Mozilla's TraceMonkey JavaScript VM
 well as some research VMs such as LuaJIT \cite{luajit:08}, Converge
 \cite{converge:05}, Lambdamachine \cite{lambdamachine} and PyHaskell
 \cite{pyhaskell}.
-\vspace{-0.2cm}
+\vspace{-0.25cm}
 \paragraph{Optimizing VM performance in a meta-tracing context}
 As we mentioned in \secref{subsec:rpython}, there are a lot of dynamic
 optimizations performed by the RPython back-end that the language
@@ -60,7 +62,7 @@ being interpreted. For example, along with the general JIT
 improvements such as value promotion and edlibale functions, PyPy and
 Converge both focus on optimizing the objects, classes and modules
 \cite{bolz15-meta-vm}.
-\vspace{-0.2cm}
+\vspace{-0.25cm}
 \paragraph{Self-hosting}
 Similarly, Bolz and contributors state that in general-purpose VMs,
 the compiler and the language being implemented should be semantically
@@ -85,7 +87,7 @@ caused by large amount of branches, such as indirect branch prediction
 tracing as well. However, in our case implementing such techniques
 would require modifying the underlying RPython framework, where our
 approach is at the language (interpreter) level.
-\vspace{-0.2cm}
+\vspace{-0.25cm}
 \paragraph{Managing abstraction levels}
 A big part of the problems we tackle in this thesis is caused by the
 fact that adding self-hosting on Pycket adds another level of
@@ -110,7 +112,7 @@ VM also allows the guest VM to provide hints about its interpreter
 loop that can specify which parts of the guest VM should not be traced
 for its own, thereby taking into account the guest VMs workload as
 well.
-\vspace{-0.4cm}
+\vspace{-0.6cm}
 \paragraph{Space concerns \& heap allocated continuations}
 Many studies investigate the space complexity and optimizations aiming
 to increase performance. Some use \emph{repurposed} JIT compilers
