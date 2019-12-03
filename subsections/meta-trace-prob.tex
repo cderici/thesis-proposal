@@ -1,27 +1,27 @@
-\subsection{Meta-tracing \& Self Hosting}
+%\subsection{Meta-tracing \& Self Hosting}
 \label{subsec:self-hosting-problem}
 
-With Racket being easier to host in different VMs and already having
+\vspace{-0.4cm}
+
+\paragraph{Meta-tracing \& Self Hosting} With Racket being easier to host in different VMs and already having
 an interpreter for it in Pycket, it is logical to consider
-self-hosting Racket on RPython, thereby turning Pycket into a full
+self-hosting Racket on RPython, thereby turning Pycket into an
 implementation of Racket. However, self-hosting on a meta-tracing
-framework poses a significant challange in terms of performance. The
-most common problem is the inconsistency in the performance
-improvements, especially for programs that has frequent changes in the
-control flow. In 2011, Mozilla reported having this problem in their
+framework poses challanges in terms of performance. The most common
+problem is the inconsistency in the performance improvements,
+especially for programs that has frequent changes in the control
+flow. In 2011, Mozilla reported having this problem in their
 TraceMonkey JIT where they observed a massive speed-up in performance
 for the parts of the programs that has tight\footnote{having only a
   single exit/loop point} loops, while suffering substantially in
 performance for other parts, stating ``You lose more when slow than
-you gain when fast'' \cite{mozblog}.
-
-This problem becomes more apparent when meta-tracing is involved,
-because the program that is being traced is another interpreter, which
-inherently involves many different control flow paths at each
-iteration in its dispatch loop \cite{bolz15-meta-vm}. Increasing the
-meta level of the VM by tracing a self-hosting interpreter, therefore,
-poses even a greater challenge. Moreover, self-hosting a modern
-functional programing language like Racket requires additional
-functionalities that naturally entail dispatch-loops, such as
-expander, reader, regular expressions and fast-load serialization
-(FASL).
+you gain when fast'' \cite{mozblog}. This problem becomes more
+apparent when meta-tracing is involved, because the program that is
+being traced is another interpreter, which inherently involves many
+different control flow paths at each iteration in its dispatch loop
+\cite{bolz15-meta-vm}. Increasing the meta level of the VM by tracing
+a self-hosting interpreter, therefore, poses even a greater
+challenge. Moreover, self-hosting a modern functional programing
+language like Racket requires additional functionalities that
+naturally entail dispatch-loops, such as expander, reader, regular
+expressions and fast-load serialization (FASL).

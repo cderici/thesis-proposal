@@ -1,4 +1,4 @@
-\newpage
+%\newpage
 
 \subsection{Performance Issues with Self-Hosting on JIT Compilers}
 \label{subsec:performance}
@@ -129,47 +129,8 @@ flow paths (e.g. non-tail calls add a continuation frame). Note that
 on Pycket the major parts in the interpreter state is composed by the
 environment and the continuation, which are heap allocated objects.
 
-This issue is partly addressed in the previous versions of Pycket by
-allowing the JIT to allocate a little bit more to force a match
-between the states. The malloc-removal and escape analysis in the
-trace optimizer often allows the JIT to remove parts of state and
-create virtuals for the objects that never escape the loop
-\cite{malloc-removal:11, loop-aware:12}. The introduced heuristic on
-Pycket allows the JIT to allocate such objects elided by the
-optimizations, trading some space for jumping into the inner loop to
-avoid performing loop-invariant operations. It is shown that with this
-heuristic the performance in gradual typing is increased by 4\% on
-Pycket, while adding no extra overhead \cite{pycket17}.
-
-Adding the linklets layer to the front-end allows Pycket to run large
-Racket programs including the expander. To give a perspective, the
-offline generated expander linklet that is processed in Pycket at boot
-itself is roughly 5MB file containing the s-expressions of 2642
-functions. Another example is, to run a single Racket program written
-in the \emph{racket/base} language (such as repl for instance), more
-than 100 Racket modules need to be expanded and instantiated first
-just to load the language before running the program itself. While
-Pycket's performance on the micro-benchmarks is not effected by the
-linklet layer (since nothing has changed in the back-end), these large
-programs that are now runnable on Pycket aggravate these issues
-observed before.
-
-%% As discussed in \secref{subsec:rpython}, a trace is generated in a
-%% meta-tracing framework by accompanying an interpreter while it is
-%% evaluating a program and detecting hot-loops. During this process, the
-%% tracer exactly follows all the operations in the interpreter. For
-%% example, if a function application is being evaluated, the next
-%% operation to be interpreted will be the first operation in the
-%% function's body\footnote{This is why inlining comes naturally from
-%%   tracing.}. While this approach works quite well in generating
-%% re-usable and concise traces for programs/loops with a straightforward
-%% control flow thanks to the hints and annotations in meta-tracing
-%% \cite{bolz09}, it becomes significantly harder when the control flow
-%% gets more complicated. Consider the following program being
-%% meta-traced:
-
-\begin{wrapfigure}[26]{r}{0.40\textwidth}
-    \vspace{-0.3cm}
+\begin{wrapfigure}[25]{r}{0.40\textwidth}
+    \vspace{-0.5cm}
     \centering
     \begin{minipage}[t]{0.38\textwidth}
       \begin{minted}[numbersep=0pt,gobble=0,linenos,numbers=right,fontsize=\scriptsize,frame=lines]{python}
@@ -212,9 +173,49 @@ jump(i11, p1, p4, i8, descr="124248256")
    (regexp-match reg-r str-big)))
     \end{minted}
     \end{minipage}
-    \caption{\small Trace of RPython regexp matching $\mathtt{\#}$\racketcode{rx"defg"}}
+    \caption{\small Trace of Pycket's regexp (in RPython) matching
+      $\mathtt{\#}$\racketcode{rx"defg"}}
     \label{fig:regexp-trace}
   \end{wrapfigure}
+
+This issue is partly addressed in the previous versions of Pycket by
+allowing the JIT to allocate a little bit more to force a match
+between the states. The malloc-removal and escape analysis in the
+trace optimizer often allows the JIT to remove parts of state and
+create virtuals for the objects that never escape the loop
+\cite{malloc-removal:11, loop-aware:12}. The introduced heuristic on
+Pycket allows the JIT to allocate such objects elided by the
+optimizations, trading some space for jumping into the inner loop to
+avoid performing loop-invariant operations. It is shown that with this
+heuristic the performance in gradual typing is increased by 4\% on
+Pycket, while adding no extra overhead \cite{pycket17}.
+
+Adding the linklets layer to the front-end allows Pycket to run large
+Racket programs including the expander. To give a perspective, the
+offline generated expander linklet that is processed in Pycket at boot
+itself is roughly 5MB file containing the s-expressions of 2642
+functions. Another example is, to run a single Racket program written
+in the \emph{racket/base} language (such as repl for instance), more
+than 100 Racket modules need to be expanded and instantiated first
+just to load the language before running the program itself. While
+Pycket's performance on the micro-benchmarks is not effected by the
+linklet layer (since nothing has changed in the back-end), these large
+programs that are now runnable on Pycket aggravate these issues
+observed before.
+
+%% As discussed in \secref{subsec:rpython}, a trace is generated in a
+%% meta-tracing framework by accompanying an interpreter while it is
+%% evaluating a program and detecting hot-loops. During this process, the
+%% tracer exactly follows all the operations in the interpreter. For
+%% example, if a function application is being evaluated, the next
+%% operation to be interpreted will be the first operation in the
+%% function's body\footnote{This is why inlining comes naturally from
+%%   tracing.}. While this approach works quite well in generating
+%% re-usable and concise traces for programs/loops with a straightforward
+%% control flow thanks to the hints and annotations in meta-tracing
+%% \cite{bolz09}, it becomes significantly harder when the control flow
+%% gets more complicated. Consider the following program being
+%% meta-traced:
 
 To understand the issue better, it is important to first see how the
 loop detection currently works on Pycket. While for the low-level
@@ -496,6 +497,17 @@ benefit from the nursery approach enough but also the mark-and-sweep
 process creates a pressure on the run-time performance, as it is a
 serial blocking collector.
 
+\begin{wrapfigure}[12]{r}{0.45\textwidth}
+  \vspace{-0.4cm}
+  \begin{mdframed}
+      \centering
+  \includegraphics[scale=0.15]{img/cek-stackful-switch}
+  \caption[hede]{Stackful \& CEK Switch}
+  \label{fig:cek--switch-stack}
+  \end{mdframed}
+%\end{figure}
+\end{wrapfigure}
+
 To address this issue (without modifying the underlying framework nor
 the GC), we propose to use a stackful interpreter to decrease the
 continuation allocations on the heap. The stackful interpreter here is
@@ -510,17 +522,6 @@ interpreter \emph{alongside} the CEK, rather than replacing the
 current CEK with a stackful interpreter. The idea is to use the stack
 and heap in balance to decrease the GC pressure and take advantage of
 using the stack, such as rapid allocations, locality etc.
-
-\begin{wrapfigure}[10]{r}{0.45\textwidth}
-  \vspace{-0.4cm}
-  \begin{mdframed}
-      \centering
-  \includegraphics[scale=0.15]{img/cek-stackful-switch}
-  \caption[hede]{Stackful \& CEK Switch}
-  \label{fig:cek--switch-stack}
-  \end{mdframed}
-%\end{figure}
-\end{wrapfigure}
 
 Using the stack to implement a language like Racket, however,
 understandibly introduces some challenges regarding the stack
@@ -667,3 +668,11 @@ stackful interpreter can currently run (without large amounts of
 switching), I seek to further characterize the performance of the
 stackful evaluation along the CEK interpreter especially on programs
 with heavy use of continuations.
+
+Taking a step towards solving the fundamental issues in self-hosting
+on meta-tracing, namely, intelligent meta-tracing of the programs with
+complex control-flow and proper handling of the heap pressure, will
+allow efficient self-hosting of Racket on meta-tracing Pycket. We
+believe these are broadly applicable solutions that will serve as
+principle approaches in self-hosting on meta-tracing frameworks in
+general.

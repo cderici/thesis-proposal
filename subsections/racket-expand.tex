@@ -17,14 +17,6 @@ this language, acting as units of compilation in the run-time, are
 called the "linklets", which are lambda-like forms that consume and
 produce potentially mutable variables (instead of values).
 
-\begin{figure}[tbp]
-  \centering
-  \includegraphics[scale=0.3]{img/racket-portable}
-  \caption{Figure used from \cite{racket-on-chez-19}}
-  \label{fig:racket-portable}
-\end{figure}
-
-
 The way that the expander elaborates a given Racket program is to
 produce a bundle of linklets for the different parts of this
 program. \figref{fig:racket-expand-example} shows an example where a
