@@ -41,9 +41,9 @@ that are implemented in the run-time, such as \emph{vector-ref} and
 Using this, just like any other Racket module, when the expander is
 given to itself as input, we get an implementation of the expander as
 a bundle of linklets that a compiler can consume. Along with the
-expander itself, this process (i.e. applying the expander) is also
-used to export several different functionalities as independent
-linklets for the run-time. These linklets are called the
+expander itself, this process (applying the expander) is also used to
+export several different functionalities as independent linklets for
+the run-time. These linklets are called the
 \emph{bootstrapping linklets}. Currently Racket exports four such
 linklets: \emph{expander}, \emph{io}, \emph{threads},
 \emph{regexp} \footnote{there's also the \emph{schemify} and

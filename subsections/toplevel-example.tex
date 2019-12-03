@@ -10,11 +10,10 @@ general overview of the interaction between the run-time and the
 functionalities provided by the language through the linklets, for
 this exercise in particular the expander linklet. Recall that the
 expander implements functions such as read, expand, eval, and outputs
-a bundle of linklets for a given Racket code.
-
-First let's briefly describe what linklets are and how linklets
-operate. In \secref{subsec:linklets-semantics} I will provide linklets'
-operational semantics with a formalism in more detail.
+a bundle of linklets for a given Racket code. Let's first briefly
+describe what linklets are and how linklets
+operate. In \secref{subsec:linklets-semantics} I will provide
+linklets' operational semantics with a formalism in more detail.
 
 A linklet consists of a set of variable definitions and expressions,
 an exported subset of the defined variable names, a set of variables
@@ -50,8 +49,8 @@ expander linklet, a VM can \emph{call} the functions from Racket's
 expander such as read, expand, eval to use Racket's module system,
 macro system etc.
 
-\begin{wrapfigure}[9]{r}{0.3\textwidth}
-  \vspace{-0.6cm}
+\begin{wrapfigure}[7]{r}{0.3\textwidth}
+  \vspace{-0.7cm}
   \begin{mdframed}
     \begin{verbatim}
 > (define k (lambda () a))
