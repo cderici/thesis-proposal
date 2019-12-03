@@ -16,3 +16,4 @@ example.bib
 *.gz
 *blx.bib
 *.run.xml
+!proposal.pdf
