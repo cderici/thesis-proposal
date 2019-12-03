@@ -21,19 +21,20 @@ to export from the linklet despite having no corresponding definition,
 and a set of imports that provide other variables for the linklet to
 use. Some linklet examples can be seen in
 \figref{fig:racket-expand-example}. To run a linklet, it is
-instantiated as a \emph{linklet instance}, which is a collection of
-linklet variables. When a linklet is instantiated, it receives other
-linklet instances for its imports, and it extracts a specified set of
-variables that are exported from each of the given instances. The
-newly created linklet instance provides its exported variables for use
-by other linklets. Moreover, an instantiation may be given an
-additional linklet instance as an input, namely the target
-instance. In this case, the variables in the target instance is used
-and modified for the linklet definitions and expressions during the
-evaluation of the body expressions, and the result is the value of the
-last expression in the linklet (instead of an instance). In the
-remainder of this document we will use the names ``targeted
-instantiation'' and ``regular instantiation'' for these two modes.
+instantiated as a \emph{linklet instance}, which is a container for a
+set of linklet variables and some other data (e.g. namespace). When a
+linklet is instantiated, it receives other linklet instances for its
+imports, and it extracts a specified set of variables that are
+exported from each of the given instances. The newly created linklet
+instance provides its exported variables for use by other
+linklets. Moreover, an instantiation may be given an additional
+linklet instance as an input, namely the target instance. In this
+case, the variables in the target instance is used and modified for
+the linklet definitions and expressions during the evaluation of the
+body expressions, and the result is the value of the last expression
+in the linklet (instead of an instance). In the remainder of this
+document we will use the names ``targeted instantiation'' and
+``regular instantiation'' for these two modes.
 
 The minimal API for a virtual machine to implement the linklets
 consists of the functions \textbf{i)} \racketcode{compile-linklet} for
@@ -68,10 +69,10 @@ As our example, let's consider the interactions in
 variable "a" is defined \emph{after} it is used within the function
 "k". To implement this repl, the VM will keep a dedicated linklet
 instance that we will refer to as the \emph{top-level}
-instance. Recall that a linklet instance is a collection of linklet
-variables. In our study we assume that it is implemented as a finite
-mapping of identifiers to linklet variables. Initially the top-level
-instance will be an empty instance.
+instance. Recall that a linklet instance is (for our example here) a
+set of linklet variables. In our study we assume that it is
+implemented as a finite mapping of identifiers to linklet
+variables. Initially the top-level instance will be an empty instance.
 
 The key point is the interaction between the language and the run-time
 through the expander linklet. At each step in the repl, the VM gets a
@@ -79,9 +80,7 @@ Racket expression to evaluate. Then it applies the \racketcode{read}
 and \racketcode{expand} functions imported from the expander linklet,
 on the given expression. For clarity, we will omit the non-essential
 details and focus only on the simplified run-time linklet for the
-expression.
-
-Let's see what happens at each interaction:
+expression. Let's see what happens at each interaction:
 
 \paragraph{$>$ (define k (lambda () a))}
 
