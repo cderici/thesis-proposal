@@ -81,7 +81,7 @@ and \racketcode{expand} functions imported from the expander linklet,
 on the given expression. For clarity, we will omit the non-essential
 details and focus only on the simplified run-time linklet for the
 expression. Let's see what happens at each interaction:
-
+\vspace{-0.25cm}
 \paragraph{$>$ (define k (lambda () a))}
 
 As we briefly explained earlier, the VM will call the expander's
@@ -90,8 +90,10 @@ expanded version of) this expression. Then the VM will use
 \racketcode{instantiate-linklet} to instantiate it over the \emph{top-level}
 instance, which is initially empty.
 
+\vspace{-0.3cm}
+
 \begin{figure}[h!]
-  \small
+  \footnotesize
   \begin{subfigure}[b]{0.25\textwidth}
     \begin{mdframed}
 \begin{verbatim}
@@ -104,43 +106,40 @@ instance, which is initially empty.
     \label{fig:1}
   \end{subfigure}
   %
-  \begin{subfigure}[b]{0.38\textwidth}
+  \begin{subfigure}[b]{0.4\textwidth}
     \begin{mdframed}
 \begin{verbatim}
 (linklet (...) ((a0 a) (k0 k))
   (define-values (k)
-    (lambda ()
-      (variable-ref (LinkletVar a0))))
+    (lambda () (variable-ref (LinkletVar a0))))
   (variable-set! (LinkletVar k0) k))
 \end{verbatim}
     \end{mdframed}
     \caption{Linklet \\ compiled by VM}
     \label{fig:2}
   \end{subfigure} \hfill
-    %
   \begin{subfigure}[b]{0.15\textwidth}
     \begin{mdframed}
       \begin{align*}
         a_0 &\rightarrow var_a \\
-        k_0 &\rightarrow var_k \\
+        k_0 &\rightarrow var_k
       \end{align*}
     \end{mdframed}
     \caption{Environment \\ after compile}
     \label{fig:2}
   \end{subfigure}
-  %
   \begin{subfigure}[b]{0.15\textwidth}
     \begin{mdframed}
       \begin{align*}
         a &\rightarrow var_a \\
-        k &\rightarrow var_k \\
+        k &\rightarrow var_k
       \end{align*}
     \end{mdframed}
     \caption{Target \\ after instantiate}
     \label{fig:2}
   \end{subfigure}
 \end{figure}
-
+\vspace{-0.25cm}
 The important point about the top-level part in this example is the
 handling of the undefined identifier "a". When the expander generates
 a linklet containing an unidentified identifier, it puts the
@@ -156,17 +155,17 @@ both "a" and the "k" within the target instance after the
 instantiation, containing the values \emph{uninitialized} and a
 closure with no arguments and body with a reference to $var_a$
 respectively.
-
+\vspace{-0.25cm}
 \paragraph{$>$ (define a 10)}
 
 When this new expression is inserted in the repl, the VM calls the
 \racketcode{expand} again to produce a linklet, then it compiles and
 instantiates it over the same \emph{top-level} target instance.
 
-%\vspace{-0.5cm}
+\vspace{-0.3cm}
 
 \begin{figure}[h!]
-  \small
+  \footnotesize
   \begin{subfigure}[b]{0.26\textwidth}
     \begin{mdframed}
 \begin{verbatim}
@@ -192,7 +191,7 @@ instantiates it over the same \emph{top-level} target instance.
   \begin{subfigure}[b]{0.15\textwidth}
     \begin{mdframed}
       \begin{align*}
-        a_1 &\rightarrow var_a \\
+        a_1 &\rightarrow var_a
       \end{align*}
     \end{mdframed}
     \caption{Environment \\ after compile}
@@ -202,14 +201,14 @@ instantiates it over the same \emph{top-level} target instance.
     \begin{mdframed}
       \begin{align*}
         a &\rightarrow var_a \\
-        k &\rightarrow var_k \\
+        k &\rightarrow var_k
       \end{align*}
     \end{mdframed}
     \caption{Target \\ after instantiate}
     \label{fig:2}
   \end{subfigure}
 \end{figure}
-
+\vspace{-0.25cm}
 Note that the \racketcode{compile-linklet} inserted the \emph{variable-set!}
 expression in the body to set the value of the variable bound by the
 external name "a". During the instantiation, this variable exists in
@@ -222,14 +221,16 @@ the target's variable will be used during the instantiation, and will
 be set by \emph{variable-set!}. Note that because of this the binding
 for $a_1$ in the environment above is set to be the $var_a$ (instead
 of a new variable), since the target does has a mapping for "a".
-
+\vspace{-0.25cm}
 \paragraph{$>$ (k)}
 
 At this step, we have everything we need to evaluate this expression
 thanks to the \emph{top-level} target instance.
 
+\vspace{-0.3cm}
+
 \begin{figure}[h!]
-  \small
+  \footnotesize
   \begin{subfigure}[b]{0.25\textwidth}
     \begin{mdframed}
 \begin{verbatim}
@@ -254,7 +255,7 @@ thanks to the \emph{top-level} target instance.
   \begin{subfigure}[b]{0.15\textwidth}
     \begin{mdframed}
       \begin{align*}
-        k_1 &\rightarrow var_k \\
+        k_1 &\rightarrow var_k
       \end{align*}
     \end{mdframed}
     \caption{Environment \\ after compile}
@@ -265,7 +266,7 @@ thanks to the \emph{top-level} target instance.
     \begin{mdframed}
       \begin{align*}
         a &\rightarrow var_a \\
-        k &\rightarrow var_k \\
+        k &\rightarrow var_k
       \end{align*}
     \end{mdframed}
     \caption{Target \\ after instantiate}
