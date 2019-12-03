@@ -1,23 +1,24 @@
-\subsection[More Portability for Racket]{More Portability for Racket}
+%\subsection[More Portability for Racket]{More Portability for Racket}
 \label{subsec:racketcs}
 
-Racket's original interpreter, as well as the compiler and run-time
+\vspace{-0.2cm}
+
+\paragraph{More Portability for Racket} Racket's original interpreter, as well as the compiler and run-time
 (including the built-in primitives and data structures) has been in C
-since its first design in 1995. Porting of the GUI layer in 2010 and
-the expander in 2016 from C to Racket has surprisingly shown that
-Racket is easier to maintain and modify than C. This essentially
-started the effort of porting more of Racket from C to Racket, which
-in turn, created the need of a more maintainable host run-time
-system. In 2017, Racket decided to adopt the Chez Scheme as its
-run-time. To to that end, two important implementation decisions
-(among others) allowed Racket to be more flexible in re-targeting
-different VMs: \textit{\textbf{i)}} separated the expansion and the
-compilation that were fused together in the original C implementation
-\textit{\textbf{ii)}} export some functionality that's essential for
-self-hosting (e.g. reader, expander etc.) for the run-time to utilize
-(e.g. to read and expand Racket modules). This relieved any targeted
-run-time from implementing those functionalities that are quite large
-in terms of both code size and semantics, thereby allowing an easier
-hosting of the language. This approach is used to adopt the Chez
-Scheme and it also made it easier for Racket to be hosted in other
-run-times as well \cite{racket-on-chez-19}.
+since its first design in 1995. Porting the GUI layer in 2010 and the
+expander in 2016 from C to Racket has verified that Racket is easier
+to maintain and modify than C. This started the effort of porting more
+of Racket from C to Racket, which in turn, created the need of a more
+maintainable host run-time system. In 2017, Racket decided to adopt
+the Chez Scheme as its run-time. To to that end, two important
+implementation decisions (among others) allowed Racket to be more
+flexible in re-targeting different VMs: \textit{\textbf{i)}} separated
+the expansion and the compilation that were fused together in the
+original C implementation \textit{\textbf{ii)}} export some
+functionality that's essential for self-hosting (e.g. reader, expander
+etc.) for the run-time to utilize (e.g. to read and expand Racket
+modules). This relieved any targeted run-time from implementing those
+functionalities that are quite large in terms of both code size and
+semantics, thereby allowing an easier hosting of the language. This
+approach is used to adopt the Chez Scheme and it also made it easier
+for potential hosting run-times for Racket \cite{racket-on-chez-19}.

@@ -76,10 +76,11 @@ instance will be an empty instance.
 
 The key point is the interaction between the language and the run-time
 through the expander linklet. At each step in the repl, the VM gets a
-Racket expression to evaluate. It calls the expander's \racketcode{read} and
-\racketcode{expand} functions with this expression, which outputs a bundle
-of linklets. For clarity, we will omit the non-essential details and
-focus only on the simplified run-time linklet for the expression.
+Racket expression to evaluate. Then it applies the \racketcode{read}
+and \racketcode{expand} functions imported from the expander linklet,
+on the given expression. For clarity, we will omit the non-essential
+details and focus only on the simplified run-time linklet for the
+expression.
 
 Let's see what happens at each interaction:
 

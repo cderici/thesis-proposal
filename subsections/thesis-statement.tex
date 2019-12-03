@@ -1,8 +1,8 @@
 My thesis statement is:
 
 \begin{quote}
-  An efficient implementation of a self-hosting functional programming
-  language is possible with on a meta-tracing JIT.
+  An efficient self-hosting functional programming language on a
+  meta-tracing JIT is achievable.
 \end{quote}
 
 I will support this thesis statement with the following research
@@ -13,19 +13,23 @@ contributions:
     I will demonstrate that Pycket has all the necessary run-time
     support (e.g. primitives, data structures, error handling etc.)
     to load and evaluate Racket code without requiring any external
-    support, thereby being able to also run and pass a sufficiently
-    big subset of Racket's own test suite, which consists of more than
-    800.000 test cases.
+    support.
   \item \textit{Approaches in achieving good performance} I will
-    propose, demonstrate, evalauate and discuss some solution
-    approaches that address the numerous performance issues that are
-    fundamental to self-hosting a language such as Racket on a
-    meta-tracing JIT compiler, such as garbage collection pressure on
-    the heap caused by deep continuation chains on the interpreter,
-    and the problem with tracing loops with complex control flow paths
-    as discused above. I will vet the run-time performance of the
+    identify the fundamental issues in self-hosting a language such as
+    Racket on a meta-tracing JIT compiler, and provide approaches in
+    addressing them. I will vet the run-time performance of the
     proposed approaches on the improved Pycket and argue why these
     approaches enable a full and efficient implementation.
+
+    %% propose, demonstrate, evalauate and discuss some solution
+    %% approaches that address the numerous performance issues that are
+    %% fundamental to self-hosting a language such as Racket on a
+    %% meta-tracing JIT compiler, such as garbage collection pressure on
+    %% the heap caused by deep continuation chains on the interpreter,
+    %% and the problem with tracing loops with complex control flow paths
+    %% as discused above.
+
+
 
     %% Preliminary analyses indicate, however, there might be a
     %% more general problem that subsumes the aformentioned issues, which
@@ -37,8 +41,8 @@ contributions:
 
 \end{itemize}
 
-I will augment this thesis statement with one of the following research directions:
+%% I will augment this thesis statement with one of the following research directions:
 
-\begin{enumerate}
-  \item this can be done
-\end{enumerate}
+%% \begin{enumerate}
+%%   \item this can be done
+%% \end{enumerate}
