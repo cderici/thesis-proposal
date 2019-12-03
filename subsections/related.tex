@@ -95,9 +95,9 @@ abstraction that needs to be semantically in-sync with the run-time
 meta-tracing VM. There has been related research studying to reduce
 complexity in systems involving multiple levels of abstractions, such
 as type-directed partial evaluation \cite{tdpe:99} and multi-stage
-programming \cite{multi-stage:97, multi-stage:17}. Amin and Rompf
-studied how to collapse a tower of interpreters interpreting
-each-other into a compiler to remove the interpretation overhead
+programming \cite{multi-stage:17}. Amin and Rompf studied how to
+collapse a tower of interpreters interpreting each-other into a
+compiler to remove the interpretation overhead
 \cite{collapse:17}. They developed a multi-level lambda calculus and a
 meta-circular evaluator, namely Pink, to demonstrate the collapse of
 arbitrarily many levels of self-interpretation.
@@ -130,14 +130,14 @@ identified in self-hosting is the garbage collection overhead caused
 by the long-chains of heap allocated continuations. Allocating
 activation records on the heap is studied extensively in the context
 of compiling with \cite{comp-cont:07} or without
-\cite{comp-without-cont:17} continuations \cite{whatever:19,
-  compWithContLLVM:16}. With that said, perhaps the most relevant work
-to our investigation with the stackful and CEK interpreters working
-together is by Hieb and contributors \cite{cont-heap-stack:90}, where
-they provide an approach to allocate activation records on the stack
-that doesn't require the stack to be copied when a continuation is
-created, thereby establishing an upper bound on the amount of copying
-which is otherwise unbounded. They also provide techniques for stack
+\cite{comp-without-cont:17} continuations \cite{whatever:19}. With
+that said, perhaps the most relevant work to our investigation with
+the stackful and CEK interpreters working together is by Hieb and
+contributors \cite{cont-heap-stack:90}, where they provide an approach
+to allocate activation records on the stack that doesn't require the
+stack to be copied when a continuation is created, thereby
+establishing an upper bound on the amount of copying which is
+otherwise unbounded. They also provide techniques for stack
 overflow/underflow recovery, which is isomorphic to continuation
 creation and re-instantiation.
 
