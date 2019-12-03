@@ -1,4 +1,5 @@
 %\newpage
+\vspace{-0.25cm}
 
 \subsection{Performance Issues with Self-Hosting on JIT Compilers}
 \label{subsec:performance}
@@ -67,7 +68,10 @@ a 	Matches the specified character literal          q       q
 \end{mdframed}
 \caption{A simple regular expression matcher (some cases are removed for space).}
 \label{fig:regexp}
+\vspace{-0.3cm}
 \end{figure}
+
+%
 
 Tracing this program running with an input regexp, say
 $\mathtt{\#}$\racketcode{rx"defg"}, trying to match it against an
@@ -119,18 +123,30 @@ values. In order to jump to a peeled-iteration, the state needs to
 match with the one that the iteration is expecting, e.g. the same
 state at the end of its preamble. On the other hand, jumping to the
 preamble of a trace requires the allocation of all the unallocated
-parts of the interpreter state. If a bridge that is produced for a
-side-exit is used to jump back to the original trace, the JIT tries to
-make it jump to the peeled-iteration whenever possible to avoid
-performing the loop-invariant operations. However, this often fails on
-Pycket because the interpreter state often can't match the expected
-state, because the state is changed differently by different control
-flow paths (e.g. non-tail calls add a continuation frame). Note that
-on Pycket the major parts in the interpreter state is composed by the
-environment and the continuation, which are heap allocated objects.
+parts of the interpreter state. If a bridge for a side-exit is used to
+jump back to the original trace, the JIT tries to make it jump to the
+peeled-iteration whenever possible to avoid performing the
+loop-invariant operations. However, this often fails on Pycket because
+the interpreter state often can't match the expected state, because
+the state is changed differently by different control flow paths
+(e.g. non-tail calls add a continuation frame). Note that in Pycket
+the major part of the interpreter state is the environment and the
+continuation, which are heap allocated objects.
 
-\begin{wrapfigure}[25]{r}{0.40\textwidth}
-    \vspace{-0.5cm}
+This issue is partly addressed in the previous versions of Pycket by
+allowing the JIT to allocate a little bit more to force a match
+between the states. The malloc-removal and escape analysis in the
+trace optimizer often allows the JIT to remove parts of state and
+create virtuals for the objects that never escape the loop
+\cite{malloc-removal:11, loop-aware:12}. The introduced heuristic on
+Pycket allows the JIT to allocate such objects elided by the
+optimizations, trading some space for jumping into the inner loop to
+avoid performing loop-invariant operations. It is shown that with this
+heuristic the performance in gradual typing is increased by 4\% on
+Pycket, while adding no extra overhead \cite{pycket17}.
+
+\begin{wrapfigure}[26]{r}{0.40\textwidth}
+    %\vspace{-0.5cm}
     \centering
     \begin{minipage}[t]{0.38\textwidth}
       \begin{minted}[numbersep=0pt,gobble=0,linenos,numbers=right,fontsize=\scriptsize,frame=lines]{python}
@@ -177,18 +193,6 @@ jump(i11, p1, p4, i8, descr="124248256")
       $\mathtt{\#}$\racketcode{rx"defg"}}
     \label{fig:regexp-trace}
   \end{wrapfigure}
-
-This issue is partly addressed in the previous versions of Pycket by
-allowing the JIT to allocate a little bit more to force a match
-between the states. The malloc-removal and escape analysis in the
-trace optimizer often allows the JIT to remove parts of state and
-create virtuals for the objects that never escape the loop
-\cite{malloc-removal:11, loop-aware:12}. The introduced heuristic on
-Pycket allows the JIT to allocate such objects elided by the
-optimizations, trading some space for jumping into the inner loop to
-avoid performing loop-invariant operations. It is shown that with this
-heuristic the performance in gradual typing is increased by 4\% on
-Pycket, while adding no extra overhead \cite{pycket17}.
 
 Adding the linklets layer to the front-end allows Pycket to run large
 Racket programs including the expander. To give a perspective, the
@@ -239,7 +243,7 @@ implementation in RPython to compare against. As a simple experiment
 to demonstrate the issue, we run both regexp implementations (the one
 in the \figref{fig:regexp} and the RPython implementation) to match
 $\mathtt{\#}$\racketcode{rx"defg"} against a large string containing
-the sequence \racketcode{"defg"} in the middle and measure the time
+\racketcode{"defg"} in the middle and measure the time
 performances. \figref{fig:regexp-trace} shows both the trace we get
 from the RPython implementation and the program we run. To run the
 simple implementation in \figref{fig:regexp}, we modify this program
@@ -287,9 +291,9 @@ such as \verb|jit_merge_point| and \verb|can_enter_jit| to indicate a
 starting point for a trace and where the interpreter might perform a
 backwards jump, respectively. An example can be seen in
 \figref{fig:rpython-interp} in \secref{subsec:rpython}. Pycket's
-interpreter's two-state tracking defines the program counter (green
-variables) as a pair of a lambda form and an application form
-(call-site) to determine the trace header.
+two-state tracking defines the program counter (green variables) as a
+pair of a lambda and an application (call-site) to determine the trace
+header.
 
 For the \verb|match-pat| function, in its original form in
 \figref{fig:regexp} (without the meta-hints), in order for a trace to

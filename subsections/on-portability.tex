@@ -1,3 +1,5 @@
+\vspace{-0.25cm}
+
 \subsubsection{On Racket's Portability}
 \label{subsec:portability}
 
@@ -36,8 +38,7 @@ code inside the expander that implements all that, calls run-time
 primitives such as for file-system support and also calls the
 \racketcode{compile-linklet} and \racketcode{instantiate-linklet} for
 expanding and instantiating all the required
-modules. \racketcode{eval} works in a similar fashion as well.
-
-This intertwined nature of the high-level language facilities and the
+modules. \racketcode{eval} works in a similar fashion as well. This
+intertwined nature of the high-level language facilities and the
 low-level run-time support is central to the Racket's improved
 portability.

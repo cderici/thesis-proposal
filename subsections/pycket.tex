@@ -2,13 +2,14 @@
 \label{subsec:pycket}
 
 \begin{figure}[h!]
-  \centering \includegraphics[scale=0.3]{img/old-pycket-2}
+  \centering \includegraphics[scale=0.3]{img/old-pycket-yatay}
 \caption{Pycket used to run Racket's executable to fully expand a given module before running it.}
 \label{fig:old-pycket}
 \end{figure}
 
+\vspace{-0.25cm}
 
-\begin{wrapfigure}[15]{r}{0.42\textwidth}
+\begin{wrapfigure}[16]{r}{0.42\textwidth}
   \vspace{-0.8cm}
 %\begin{figure}[h!]
   \small
@@ -38,10 +39,13 @@ except Done, e:
 %\end{figure}
 \end{wrapfigure}
 
-
 Pycket is first designed in 2014 as a high-performance JIT compiler
 for Racket, generated using the RPython meta-tracing framework
-\cite{bolz14-racket}. The language interpreter is based on the CEK
+\cite{bolz14-racket}. In its original design, as shown in
+\figref{fig:old-pycket}, Pycket relies on the Racket executable to
+read and fully expand a given module\cite{samth:11}, and then
+generates RPython AST for it and evaluates it within the interpreter
+loop \cite{pycket15}. The language interpreter is based on the CEK
 abstract machine and has the state $\langle e, \rho, \kappa \rangle$ ($e$ : control
 (program AST), $\rho$ : environment, $\kappa$ : continuation)
 \cite{felleisen87}. \figref{fig:cek} shows the transition rules and
@@ -50,33 +54,27 @@ continuously reduces the CEK triple until an empty continuation is
 reached, which triggers a \emph{Done} exception that returns the
 results.
 
-In its original design, as shown in \figref{fig:old-pycket}, Pycket
-relies on the Racket executable to read and fully expand a given
-module\cite{samth:11}, and then generates RPython AST for it and
-evaluates it within the interpreter loop \cite{pycket15}. Exploiting
-the increased portability in Racket, here we turn the Pycket from
-being a rudimentary compiler to an actual implementation of Racket,
-independent of the Racket executable.
-
-First step is building the \emph{linklets} layer by implementing the
-\emph{compile-linklet} and \emph{instantiate-linklet} functions in
-RPython, thereby allowing Pycket to process and evaluate linklets. The
-\emph{compile-linklet} takes an s-expression for a linklet to produce
-a linklet object as described in
-\secref{subsec:linklets-semantics}. It makes several passes on the
-s-expression to determine the identifiers that are defined within the
-linklet and the ones that are mutated. Then it processes the imported
-and exported identifiers to produce the Import and Export run-time
-objects, freshly generating identifiers (gensym) as needed. Then it
-makes a final recursive pass to produce the RPython AST for the body,
-and puts all the information within a linklet object. The
-\emph{instantiate-linklet} on the other hand, carries out the steps
-for running a linklet object. First it processes the Import and Export
-objects and collects and creates variables as necessary, and prepares
-the target instance (i.e. creates a new instance if it's a regular
-instantiation) and interprets the body, effectively implementing the
-$\longrightarrow_{\beta p}$ reduction in the \figref{fig:reduction} which will be
-transitively applied by the interpreter loop.
+Exploiting the increased portability in Racket, here we turn the
+Pycket from being a rudimentary compiler to an implementation of
+Racket, independent of the Racket binary. First step is building the
+\emph{linklets} layer by implementing the \emph{compile-linklet} and
+\emph{instantiate-linklet} functions in RPython, thereby allowing
+Pycket to process and evaluate linklets. The \emph{compile-linklet}
+takes an s-expression for a linklet to produce a linklet object as
+described in \secref{subsec:linklets-semantics}. It makes several
+passes on the s-expression to determine the identifiers that are
+defined within the linklet and the ones that are mutated. Then it
+processes the imported and exported identifiers to produce the Import
+and Export run-time objects, freshly generating identifiers (gensym)
+as needed. Then it makes a final recursive pass to produce the RPython
+AST for the body, and puts all the information within a linklet
+object. The \emph{instantiate-linklet} on the other hand, carries out
+the steps for running a linklet object. First it processes the Import
+and Export objects and collects and creates variables as necessary,
+and prepares the target instance (i.e. creates a new instance if it's
+a regular instantiation) and interprets the body, effectively
+implementing the $\longrightarrow_{\beta p}$ reduction in the \figref{fig:reduction}
+which will be transitively applied by the interpreter loop.
 
 After implementing the \emph{compile-linklet} and
 \emph{instantiate-linklet}, the next step is to load the bootstrapping
@@ -87,12 +85,16 @@ one for bootstrapping (also it's the biggest one). Loading the other
 linklets are essentially the same process (modulo the run-time support
 they need).
 
+\vspace{-0.1cm}
+
 \begin{figure}[h!]
   \centering
-\includegraphics[scale=0.3]{img/new-pycket}
+\includegraphics[scale=0.3]{img/new-pycket-yatay}
 \caption{Pycket now uses the functionalities from the expander linklet to expand and run a given module.}
 \label{fig:new-pycket}
 \end{figure}
+
+\vspace{-0.25cm}
 
 As we described in \secref{subsec:racket-expand}, the expander linklet
 is generated offline by running the expander on itself using the
@@ -120,7 +122,7 @@ Racket's read, expand and eval functions, as shown in
 handles the setup to call Racket functions within the CEK loop.
 
 \begin{wrapfigure}[8]{r}{0.42\textwidth}
-  \vspace{-0.6cm}
+  \vspace{-0.25cm}
 \begin{minted}[numbersep=0pt,gobble=0,linenos,numbers=left,fontsize=\footnotesize,frame=lines]{python}
   while True:
     r_exp = read.call_racket([repl.readline(), ...])
