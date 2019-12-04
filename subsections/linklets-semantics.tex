@@ -206,33 +206,7 @@ RC, $\beta_r$. For clarity, the reduction of the programs and the linklet
 instantiation is defined together by the same relation ($\beta_p$) so that
 the whole evaluation generating a single small-step sequence of
 reductions from programs to values.
-
-\begin{table}[h!]
-  %\vspace{-0.3cm}
-  \centering
-  %\scriptsize
-  \footnotesize
-  \begin{tabular}{lc|c|c}
-    &\textbf{program} & \textbf{$\rho$} & \textbf{$\sigma$} \\ \hline \hline
-    &\begin{lstlisting}[mathescape]
-(program ([l1 (linklet () (a k) (define-values (k) (lambda () a)) (void))]
-           [l2 (linklet () (a) (define-values (a) 10) (void))]
-           [l3 (linklet () (k) (k))])
-  (let-inst t (make-instance)
-     (seq ($\phi^I$ l1 #:t t) ($\phi^I$ l2 #:t t) ($\phi^I$ l3 #:t t))))
-    \end{lstlisting} & [] & [] \\ \hline
-    $\longrightarrow_{\beta p}*$&\begin{lstlisting}[mathescape]
-(program ()
-  (let-inst t (make-instance)
-     (seq ($\phi^I$ (L$\alpha$ () ((Export a1 a a) (Export k1 k k))
-                   (define-values (k) (lambda () (var-ref a1)))
-                   (var-set! k1 k) (void)) #:t t)
-           ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
-                   (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
-           ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
-    \end{lstlisting} & [] & [] \\ \hline
-  \end{tabular}
-\end{table}
+%\vspace{0.5cm}
 
 After the compilation and loading phase, all the linklet objects are
 in $\la$ form and ready to be instantiated. Recall that a linklet
@@ -302,6 +276,52 @@ program continues by similarly instantiating the other two linklets
 and finally returning the last value in the
 \verb|seq| form.
 
+\vspace{0.25cm}
+
+\begin{adjustbox}{center}
+%\begin{table}[h!]
+  %\vspace{-0.3cm}
+  %\centering
+  %\scriptsize
+  \footnotesize
+  \begin{tabular}{lc|c|c}
+    &\textbf{program} & \textbf{$\rho$} & \textbf{$\sigma$} \\ \hline \hline
+    &\begin{lstlisting}[mathescape]
+(program ([l1 (linklet () (a k) (define-values (k) (lambda () a)) (void))]
+           [l2 (linklet () (a) (define-values (a) 10) (void))]
+           [l3 (linklet () (k) (k))])
+  (let-inst t (make-instance)
+     (seq ($\phi^I$ l1 #:t t) ($\phi^I$ l2 #:t t) ($\phi^I$ l3 #:t t))))
+    \end{lstlisting} & [] & [] \\ \hline
+    $\longrightarrow_{\beta p}*$&\begin{lstlisting}[mathescape]
+(program ()
+  (let-inst t (make-instance)
+     (seq ($\phi^I$ (L$\alpha$ () ((Export a1 a a) (Export k1 k k))
+                   (define-values (k) (lambda () (var-ref a1)))
+                   (var-set! k1 k) (void)) #:t t)
+           ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+                   (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+           ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+    \end{lstlisting} & [] & [] \\ \hline
+    $\longrightarrow_{\beta p}*$&\begin{lstlisting}[mathescape]
+(program ()
+  (seq ($\phi^I$ (L$\beta$ t (define-values (k) (lambda () (var-ref a1))) (var-set! k1 k) (void)))
+        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+    \end{lstlisting} & \thead{[k1 $\rightarrow$ $var_k$, \\a1 $\rightarrow$ $var_a$]} & \thead{[$var_a,var_k$ $\rightarrow$ uninit,\\ t $\rightarrow$ (linklet-instance \\ (a $var_a$) (k $var_k$)), \\li $\rightarrow$ (linklet-instance)]} \\ \hline
+    $\longrightarrow_{\beta p}*$&\begin{lstlisting}[mathescape]
+(program ()
+  (seq ($\phi^I$ (L$\beta$ t (var-set! k1 k) (void)))
+        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+    \end{lstlisting} & \thead{[k $\rightarrow$ $cell_1$,\\k1 $\rightarrow$ $var_k$,\\a1 $\rightarrow$ $var_a$]} & \thead{[$cell_1$ $\rightarrow$ closure,\\$var_a,var_k$ $\rightarrow$ uninit,\\t $\rightarrow$ (linklet-instance\\(a $var_a$) (k $var_k$)),\\li $\rightarrow$ (linklet-instance)]} \\ \hline
+  \end{tabular}
+%\end{table}
+\end{adjustbox}
+
+
 
 \begin{figure}[h!]
   \footnotesize
@@ -348,61 +368,61 @@ and finally returning the last value in the
   \end{mdframed}
 \end{figure}
 
-\begin{adjustbox}{center}
-%\begin{table} %[h!]
-  \footnotesize
-%\begin{table}
-  \begin{tabular}{lc|c|c}
-    &\textbf{program} & \textbf{$\rho$} & \textbf{$\sigma$} \\ \hline \hline
-    $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
-(program ()
-  (seq ($\phi^I$ (L$\alpha$ () ((Export a1 a a) (Export k1 k k))
-                (define-values (k) (lambda () (var-ref a1))) (var-set! k1 k) (void)) #:t t)
-        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
-                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
-        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
-    \end{lstlisting} & [] & \thead{[t $\rightarrow$ (linklet-instance), \\li $\rightarrow$ (linklet-instance)]} \\ \hline
-    $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
-(program ()
-  (seq ($\phi^I$ (L$\beta$ t (define-values (k) (lambda () (var-ref a1))) (var-set! k1 k) (void)))
-        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
-                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
-        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
-    \end{lstlisting} & \thead{[k1 $\rightarrow$ $var_k$, \\a1 $\rightarrow$ $var_a$]} & \thead{[$var_a,var_k$ $\rightarrow$ uninit,\\ t $\rightarrow$ (linklet-instance \\ (a $var_a$) (k $var_k$)), \\li $\rightarrow$ (linklet-instance)]} \\ \hline
-    %&\textbf{program} & \textbf{$\rho$} & \textbf{$\sigma$} \\ \hline \hline
-    $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
-(program ()
-  (seq ($\phi^I$ (L$\beta$ t (var-set! k1 k) (void)))
-        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
-                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
-        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
-    \end{lstlisting} & \thead{[k $\rightarrow$ $cell_1$,\\k1 $\rightarrow$ $var_k$,\\a1 $\rightarrow$ $var_a$]} & \thead{[$cell_1$ $\rightarrow$ closure,\\$var_a,var_k$ $\rightarrow$ uninit,\\t $\rightarrow$ (linklet-instance\\(a $var_a$) (k $var_k$)),\\li $\rightarrow$ (linklet-instance)]} \\ \hline
-    $\longrightarrow_{\beta r}$&\begin{lstlisting}[mathescape]
-(program ()
-  (seq ($\phi^I$ (L$\beta$ t (var-set! k1 (closure () (var-ref a1) ((k1 $var_k$) (a1 $var_a$)))) (void)))
-        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
-                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
-        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
-    \end{lstlisting} & \thead{[k $\rightarrow$ $cell_1$,\\k1 $\rightarrow$ $var_k$,\\a1 $\rightarrow$ $var_a$]} & \thead{[$cell_1$ $\rightarrow$ closure,\\$var_a,var_k$ $\rightarrow$ uninit,\\t $\rightarrow$ (linklet-instance\\(a $var_a$) (k $var_k$)),\\li $\rightarrow$ (linklet-instance)]} \\ \hline
-    $\longrightarrow_{\beta r}$&\begin{lstlisting}[mathescape]
-(program ()
-  (seq ($\phi^I$ (L$\beta$ t (void)))
-        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
-                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
-        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
-    \end{lstlisting} & \thead{[k $\rightarrow$ $cell_1$,\\k1 $\rightarrow$ $var_k$,\\a1 $\rightarrow$ $var_a$]} & \thead{[$cell_1$ $\rightarrow$ closure,\\$var_a$ $\rightarrow$ uninit,\\$var_k$ $\rightarrow$ closure,\\t $\rightarrow$ (linklet-instance\\(a $var_a$) (k $var_k$)),\\li $\rightarrow$ (linklet-instance)]} \\ \hline
-    $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
-(program ()
-  (seq ((void) t)
-        ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
-                (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
-        ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
-    \end{lstlisting} & \thead{[k $\rightarrow$ $cell_1$,\\k1 $\rightarrow$ $var_k$,\\a1 $\rightarrow$ $var_a$]} & \thead{[$cell_1$ $\rightarrow$ closure,\\$var_a$ $\rightarrow$ uninit,\\$var_k$ $\rightarrow$ closure,\\t $\rightarrow$ (linklet-instance\\(a $var_a$) (k $var_k$)),\\li $\rightarrow$ (linklet-instance)]} \\ \hline
-  \end{tabular}
-  %\caption{The first linklet is being instantiated. (Only showing the essential reduction steps)}
-%\end{table}
-%\end{figure}
-\end{adjustbox}
+%% \begin{adjustbox}{center}
+%% %\begin{table} %[h!]
+%%   \footnotesize
+%% %\begin{table}
+%%   \begin{tabular}{lc|c|c}
+%%     &\textbf{program} & \textbf{$\rho$} & \textbf{$\sigma$} \\ \hline \hline
+%%     $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
+%% (program ()
+%%   (seq ($\phi^I$ (L$\alpha$ () ((Export a1 a a) (Export k1 k k))
+%%                 (define-values (k) (lambda () (var-ref a1))) (var-set! k1 k) (void)) #:t t)
+%%         ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+%%                 (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+%%         ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+%%     \end{lstlisting} & [] & \thead{[t $\rightarrow$ (linklet-instance), \\li $\rightarrow$ (linklet-instance)]} \\ \hline
+%%     $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
+%% (program ()
+%%   (seq ($\phi^I$ (L$\beta$ t (define-values (k) (lambda () (var-ref a1))) (var-set! k1 k) (void)))
+%%         ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+%%                 (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+%%         ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+%%     \end{lstlisting} & \thead{[k1 $\rightarrow$ $var_k$, \\a1 $\rightarrow$ $var_a$]} & \thead{[$var_a,var_k$ $\rightarrow$ uninit,\\ t $\rightarrow$ (linklet-instance \\ (a $var_a$) (k $var_k$)), \\li $\rightarrow$ (linklet-instance)]} \\ \hline
+%%     %&\textbf{program} & \textbf{$\rho$} & \textbf{$\sigma$} \\ \hline \hline
+%%     $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
+%% (program ()
+%%   (seq ($\phi^I$ (L$\beta$ t (var-set! k1 k) (void)))
+%%         ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+%%                 (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+%%         ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+%%     \end{lstlisting} & \thead{[k $\rightarrow$ $cell_1$,\\k1 $\rightarrow$ $var_k$,\\a1 $\rightarrow$ $var_a$]} & \thead{[$cell_1$ $\rightarrow$ closure,\\$var_a,var_k$ $\rightarrow$ uninit,\\t $\rightarrow$ (linklet-instance\\(a $var_a$) (k $var_k$)),\\li $\rightarrow$ (linklet-instance)]} \\ \hline
+%%     $\longrightarrow_{\beta r}$&\begin{lstlisting}[mathescape]
+%% (program ()
+%%   (seq ($\phi^I$ (L$\beta$ t (var-set! k1 (closure () (var-ref a1) ((k1 $var_k$) (a1 $var_a$)))) (void)))
+%%         ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+%%                 (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+%%         ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+%%     \end{lstlisting} & \thead{[k $\rightarrow$ $cell_1$,\\k1 $\rightarrow$ $var_k$,\\a1 $\rightarrow$ $var_a$]} & \thead{[$cell_1$ $\rightarrow$ closure,\\$var_a,var_k$ $\rightarrow$ uninit,\\t $\rightarrow$ (linklet-instance\\(a $var_a$) (k $var_k$)),\\li $\rightarrow$ (linklet-instance)]} \\ \hline
+%%     $\longrightarrow_{\beta r}$&\begin{lstlisting}[mathescape]
+%% (program ()
+%%   (seq ($\phi^I$ (L$\beta$ t (void)))
+%%         ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+%%                 (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+%%         ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+%%     \end{lstlisting} & \thead{[k $\rightarrow$ $cell_1$,\\k1 $\rightarrow$ $var_k$,\\a1 $\rightarrow$ $var_a$]} & \thead{[$cell_1$ $\rightarrow$ closure,\\$var_a$ $\rightarrow$ uninit,\\$var_k$ $\rightarrow$ closure,\\t $\rightarrow$ (linklet-instance\\(a $var_a$) (k $var_k$)),\\li $\rightarrow$ (linklet-instance)]} \\ \hline
+%%     $\longrightarrow_{\beta p}$&\begin{lstlisting}[mathescape]
+%% (program ()
+%%   (seq ((void) t)
+%%         ($\phi^I$ (L$\alpha$ () ((Export a1 a a))
+%%                 (define-values (a) 10) (var-set! a1 a) (void)) #:t t)
+%%         ($\phi^I$ (L$\alpha$ () ((Export k1 k k)) ((var-ref k1))) #:t t))))
+%%     \end{lstlisting} & \thead{[k $\rightarrow$ $cell_1$,\\k1 $\rightarrow$ $var_k$,\\a1 $\rightarrow$ $var_a$]} & \thead{[$cell_1$ $\rightarrow$ closure,\\$var_a$ $\rightarrow$ uninit,\\$var_k$ $\rightarrow$ closure,\\t $\rightarrow$ (linklet-instance\\(a $var_a$) (k $var_k$)),\\li $\rightarrow$ (linklet-instance)]} \\ \hline
+%%   \end{tabular}
+%%   %\caption{The first linklet is being instantiated. (Only showing the essential reduction steps)}
+%% %\end{table}
+%% %\end{figure}
+%% \end{adjustbox}
 
 %% \begin{figure}[h!]
 %%   \footnotesize
