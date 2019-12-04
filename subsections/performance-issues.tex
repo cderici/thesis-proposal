@@ -345,19 +345,22 @@ may occur at this level (by the \verb|can-enter-jit| no-ops) helps the
 profiling on Pycket by considering only the marked spots, as opposed
 to every lambda application.
 
-A more complicated idea here is to use the meta-hints to help reduce
-the branching effect. Currently the tracer follows the interpreter
-through the branches and calls and records a sequence of instructions
-for a hot loop. Note that the input is still a possibly non-repetitive
-sequence of data, so the tracer will still go in different branches at
-each step without stopping. Pausing and unpausing the tracer at
-certain spots would make forming a trace much more complicated, as it
-could easily invalidate a certain computation path and render the
-recorded instructions unusable. However, if the tracer is modified to
-label the instructions as it records, then it might be possible to
-filter out instructions and compose a trace that only includes the
-instructions with a certain label, thereby forming a bundle of
-coherent and concise loops involving only the paths for each branch.
+A slightly more complicated idea here is to use the meta-hints to help
+reduce the branching effect. Currently the tracer follows the
+interpreter through the branches and calls and records a sequence of
+instructions for a hot loop. Note that the input is still a possibly
+non-repetitive sequence of data, so the tracer will still go in
+different branches at each step without stopping. Pausing and
+unpausing the tracer at certain spots would make forming a trace much
+more complicated, as it could easily invalidate a certain computation
+path and render the recorded instructions unusable. However, if
+additional labels are dynamically added to the green variables at the
+looping points, tracer would consider the branch it records too in
+addition to the lambda and the call-site (and the newly added
+\verb|pattern|). This will have the effect of filtering out
+instructions and composing a trace that only includes the instructions
+with a certain label, thereby forming a bundle of coherent and concise
+loops involving only the paths for each branch.
 
 %% \begin{wrapfigure}[26]{r}{0.40\textwidth}
 %%     \vspace{-0.5cm}
@@ -488,17 +491,6 @@ the amount of live objects that are used by the program fits in the
 nursery (set to be the size of CPU Level 2 cache). \cite{pypy06,
   bolz:14, gc:16, gc:12}
 
-\begin{wrapfigure}[12]{r}{0.45\textwidth}
-  \vspace{-0.4cm}
-  \begin{mdframed}
-      \centering
-  \includegraphics[scale=0.15]{img/cek-stackful-switch}
-  \caption[hede]{Stackful \& CEK Switch}
-  \label{fig:cek--switch-stack}
-  \end{mdframed}
-%\end{figure}
-\end{wrapfigure}
-
 Now that the Racket's expander is used to expand a given module within
 the Pycket's run-time, the life in the heap is much different than
 what a generational GC would like to see. The allocated objects are
@@ -515,6 +507,18 @@ benefit from the nursery approach enough but also the mark-and-sweep
 process creates a pressure on the run-time performance, as it is a
 serial blocking collector.
 
+\begin{wrapfigure}[12]{r}{0.45\textwidth}
+  \vspace{-0.4cm}
+  \begin{mdframed}
+      \centering
+  \includegraphics[scale=0.15]{img/cek-stackful-switch}
+  \caption[hede]{Stackful \& CEK Switch}
+  \label{fig:cek--switch-stack}
+  \end{mdframed}
+%\end{figure}
+\end{wrapfigure}
+
+
 To address this issue (without modifying the underlying framework nor
 the GC), we propose to use a stackful interpreter to decrease the
 continuation allocations on the heap. The stackful interpreter here is
@@ -529,25 +533,6 @@ interpreter \emph{alongside} the CEK, rather than replacing the
 current CEK with a stackful interpreter. The idea is to use the stack
 and heap in balance to decrease the GC pressure and take advantage of
 using the stack, such as rapid allocations, locality etc.
-
-\begin{wrapfigure}[11]{r}{0.45\textwidth}
-  \vspace{-0.6cm}
-  \footnotesize
-%\begin{figure}[h!]
-  \begin{mdframed}
-    \begin{align*}
-      e &::=\; x\; |\; v\; |\; (e\; e\; \ldots)\; |\; (\textbf{if}\; e\; e\; e)\; |\; (o\; e\; e)\; \\
-      \; &|\; (\textbf{begin}\; e\; e\; \ldots)\; |\; (\textbf{lambda}\; (x_{\_!\_}\; \ldots)\; e)\\
-      \; &|\; (\textbf{set!}\; x\; e)\; |\; (\textbf{raises}\; e)\\
-      \; &|\; (\textbf{let\dash values}\; (((x)\; e)\; \ldots)\; e)\\
-      \; &|\; (\textbf{convert\dash to\dash stackful}\; e)\\
-      \; &|\; (\textbf{convert\dash to\dash cek}\; e)
-    \end{align*}
-  \caption[hede]{Source Language for Stackful \& CEK Models}
-  \label{fig:st-cek--source}
-  \end{mdframed}
-%\end{figure}
-\end{wrapfigure}
 
 Using the stack to implement a language like Racket, however,
 understandibly introduces some challenges regarding the stack
@@ -571,6 +556,25 @@ problems such as switching back to the CEK when the stack is very deep
 (e.g. stack overflow), since that would require allocating enough
 continuations on the heap to counterbalance the performance benefit we
 get from using the stackful interpreter.
+
+\begin{wrapfigure}[11]{r}{0.45\textwidth}
+  \vspace{-0.6cm}
+  \footnotesize
+%\begin{figure}[h!]
+  \begin{mdframed}
+    \begin{align*}
+      e &::=\; x\; |\; v\; |\; (e\; e\; \ldots)\; |\; (\textbf{if}\; e\; e\; e)\; |\; (o\; e\; e)\; \\
+      \; &|\; (\textbf{begin}\; e\; e\; \ldots)\; |\; (\textbf{lambda}\; (x_{\_!\_}\; \ldots)\; e)\\
+      \; &|\; (\textbf{set!}\; x\; e)\; |\; (\textbf{raises}\; e)\\
+      \; &|\; (\textbf{let\dash values}\; (((x)\; e)\; \ldots)\; e)\\
+      \; &|\; (\textbf{convert\dash to\dash stackful}\; e)\\
+      \; &|\; (\textbf{convert\dash to\dash cek}\; e)
+    \end{align*}
+  \caption[hede]{Source Language for Stackful \& CEK Models}
+  \label{fig:st-cek--source}
+  \end{mdframed}
+%\end{figure}
+\end{wrapfigure}
 
 To understand this problem better and to work on a simpler setup, I
 developed a formalism that includes both the CEK machine and the
