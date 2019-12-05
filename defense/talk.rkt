@@ -123,3 +123,36 @@
                      c)
           c))
       )))
+
+
+
+#| (1)
+High-Level Overview
+
+- Self-hosting a functional language on a meta-tracing JIT is hard.
+- This thesis identifies the fundamental issues and provides
+approaches on addressing them.
+- I demonstrate by increasing performance of Pycket self-hosting
+Racket using these approaches.
+|#
+
+
+#| (2)
+JIT Compilers and meta-tracing
+|#
+
+#| (3)
+Racket's portability, self-hosting and linklets
+|#
+
+#| (4)
+Improved Pycket
+|#
+
+#| (5)
+Issues and Solutions
+|#
+
+#| (6)
+Research Plan & Timeline
+|#
