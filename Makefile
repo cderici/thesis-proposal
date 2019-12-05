@@ -5,6 +5,12 @@ all: clean
 	bibtex proposal
 	pdflatex -shell-escape proposal.tex
 
+talk:
+	$(MAKE) -C defense run
+
+talk-wide:
+	$(MAKE) -C defense run-wide
+
 remove-pdf:
 	$(RM) proposal.pdf
 
